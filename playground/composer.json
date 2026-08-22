@@ -1,0 +1,32 @@
+{
+    "name": "veldora/app",
+    "description": "Veldora Application",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.2 || ^8.3",
+        "veldora/framework": "*@dev",
+        "veldora/ui": "*@dev"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "D:/Veldora/veldora-core",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "D:/Veldora/veldora-ui",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

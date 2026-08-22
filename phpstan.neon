@@ -1,0 +1,9 @@
+parameters:
+    level: 6
+    paths:
+        - veldora-core/src
+        - create-veldora-app/src
+        - veldora-ui/src
+    excludePaths:
+        - **/tests/**
+        - **/vendor/**

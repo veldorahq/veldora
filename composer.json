@@ -1,0 +1,34 @@
+{
+    "name": "veldora/monorepo",
+    "description": "Veldora Monorepo Workspace",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.2 || ^8.3",
+        "psr/container": "^2.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.59",
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "files": [
+            "veldora-core/src/helpers.php"
+        ],
+        "psr-4": {
+            "Veldora\\Framework\\": "veldora-core/src/",
+            "Veldora\\Installer\\": "create-veldora-app/src/",
+            "Veldora\\UI\\": "veldora-ui/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Veldora\\Framework\\Tests\\": "veldora-core/tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "process-timeout": 1800
+    }
+}
