@@ -1,19 +1,31 @@
+# Dependencies
 /vendor/
 /node_modules/
-/.env
-/.env.*
+
+# Environment
+.env
+.env.*
 !.env.example
+
+# Playground & Scratch
+/playground/
+*.ps1
+*.bat
+
+# Build & Test outputs
 .phpunit.cache/
 .phpunit.result.cache
+*.vsix
+
+# Cache and Storage
 /storage/framework/cache/*
 /storage/framework/views/*
 /storage/logs/*
 !/storage/framework/cache/.gitkeep
 !/storage/framework/views/.gitkeep
 !/storage/logs/.gitkeep
-playground/vendor/
-playground/.env
-playground/storage/
+
+# System files
 *.log
 .DS_Store
 Thumbs.db
