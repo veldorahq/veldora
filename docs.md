@@ -1,358 +1,441 @@
 # Veldora Framework Documentation
 
 > **Veldora** — _A PHP framework you actually own._
-> Modern PHP 8.2+. Zero magic. Full control.
+> Modern PHP 8.2+ MVC architecture, expressive routing, Blade-inspired templates, guard-based authentication, 21 UI components, queues, mail, events, cache, storage, and zero framework lock-in.
 
 ---
 
-## Getting Started
+## 1. Getting Started & Installation
 
-## Installation
+Veldora provides two first-class installation methods: an **interactive npm / npx installer** (which sets up your app with zero manual configuration) and a **Composer package creator** (for standard PHP environments).
 
-The quickest way to create a new Veldora project is with the official installer. You only need Composer installed on your machine.
+### System Requirements
+
+Make sure your machine or server meets the following requirements:
+
+| Requirement | Minimum Version | Note |
+|---|---|---|
+| **PHP** | 8.2 or higher | Strict typing, readonly classes, constructor promotion |
+| **PDO Extension** | Enabled | Required for all database drivers |
+| **SQLite Extension** | Enabled | Used by default for instant local setup |
+| **Composer** | 2.0+ | Dependency manager |
+| **Node.js** | 18+ | (Optional) Only required for the `npx` / `npm` installer |
+
+---
+
+### Method A — Interactive npm / npx Installer (Recommended)
+
+The official `create-veldora-app` package allows you to scaffold a production-ready application in seconds.
+
+```bash
+# Run instantly with npx (no global install needed):
+npx create-veldora-app my-app
+
+# Or install globally for a permanent `veldora` command:
+npm install -g create-veldora-app
+veldora new my-app
+```
+
+```terminal
+  ▲ Veldora Framework  v1.0.0
+  The modern PHP framework you actually own.
+
+  ? What is your project named? (my-veldora-app): my-blog
+
+  Creating a new Veldora app in /home/user/my-blog...
+
+  Installing dependencies via Composer... ✔ Done
+  Generating secure APP_KEY... ✔ Done
+  Configuring storage and logs directory... ✔ Done
+
+  🎉 Success! Created my-blog at /home/user/my-blog
+
+  Inside your new project, you can run:
+
+    php veldora serve
+    Starts local dev server at http://localhost:8000
+
+    php veldora make:auth
+    Scaffolds complete login, registration, and dashboard
+
+    php veldora add button input modal tabs
+    Copies UI components into resources/views/components/
+```
+
+#### npm CLI Options
+
+```bash
+# Create project directly
+npx create-veldora-app my-app
+
+# Create using the `new` subcommand
+npx create-veldora-app new my-app
+
+# Show help guide and all available flags
+npx create-veldora-app --help
+
+# Check installed version
+npx create-veldora-app --version
+```
+
+---
+
+### Method B — Composer Installation
+
+If you prefer using Composer without Node.js:
 
 ```bash
 composer create-project veldora/veldora my-app
 cd my-app
+cp .env.example .env
+```
+
+---
+
+### Starting the Development Server
+
+Once your project is created, enter the folder and start the built-in development server:
+
+```bash
+cd my-app
 php veldora serve
 ```
 
-Your app will be running at **http://localhost:8000**. Open the browser and you'll see the Veldora welcome page.
+Open **http://localhost:8000** in your browser. You will see the Veldora welcome screen.
 
-### System Requirements
+To run on a custom port or host:
 
-Before you begin, make sure your server meets these requirements:
+```bash
+php veldora serve --port=8080 --host=0.0.0.0
+```
 
-- PHP **8.2 or higher**
-- The **PDO** PHP extension
-- The **SQLite** extension (for the default SQLite database)
-- **Composer** for dependency management
+---
 
-### Project Structure
-
-After creating a new project, here is what the directory structure looks like and what each folder is for:
+### Project Structure Overview
 
 ```
 my-app/
 ├── app/
-│   ├── Controllers/     # Request handlers — one action per method
-│   ├── Middleware/      # Custom request/response interceptors
-│   ├── Models/          # Database models (one per table)
-│   └── Services/        # Business logic, reusable across controllers
+│   ├── Controllers/          # Request handlers
+│   ├── Middleware/           # HTTP filters (Auth, CSRF, Admin, etc.)
+│   ├── Models/               # ActiveRecord ORM entities
+│   ├── Services/             # Application business logic
+│   ├── Events/               # Event classes
+│   ├── Listeners/            # Event listeners
+│   ├── Jobs/                 # Background queue jobs
+│   ├── Mail/                 # Mailable classes
+│   └── Http/
+│       ├── Requests/         # Form validation request classes
+│       └── Resources/        # JSON API resource transformers
 ├── bootstrap/
-│   └── app.php          # Application bootstrap — binds services, loads config
+│   └── app.php               # Container & service registration
 ├── config/
-│   ├── app.php          # App name, URL, debug mode, timezone
-│   ├── auth.php         # Guard settings, user model
-│   ├── cache.php        # Cache driver and TTL settings
-│   ├── database.php     # Database driver, host, credentials
-│   ├── filesystems.php  # Storage disks (local, public)
-│   ├── logging.php      # Log channel, daily rotation
-│   ├── mail.php         # SMTP or native mailer settings
-│   ├── queue.php        # Queue driver (sync, database)
-│   └── session.php      # Session driver, lifetime, cookie settings
+│   ├── app.php               # App name, debug mode, timezone
+│   ├── auth.php              # Guard settings & user providers
+│   ├── database.php          # Connection credentials (sqlite, mysql, pgsql)
+│   ├── mail.php              # SMTP & mail transport settings
+│   ├── queue.php             # Queue driver settings (sync, database)
+│   ├── cache.php             # Cache store settings (file, array)
+│   ├── filesystems.php       # Storage disks (local, public)
+│   ├── logging.php           # Log channels & daily log rotation
+│   └── session.php           # Session driver & cookie configuration
 ├── database/
-│   ├── factories/       # Model factories for tests and seeders
-│   ├── migrations/      # Versioned database schema files
-│   └── seeders/         # Seed the database with sample data
+│   ├── factories/            # Model factories for testing & seeding
+│   ├── migrations/           # Versioned database schema definitions
+│   └── seeders/              # Database seeders
 ├── public/
-│   └── index.php        # Web entry point — all HTTP requests go here
+│   └── index.php             # Web entry point
 ├── resources/
-│   └── views/           # Template files (.veldora.php)
+│   └── views/                # .veldora.php view templates
+│       ├── components/       # UI components (<x-button>, etc.)
+│       └── layouts/          # Base layouts
 ├── routes/
-│   └── web.php          # All your application routes
+│   └── web.php               # Route definitions
 ├── storage/
-│   ├── app/             # User-uploaded and generated files
-│   ├── framework/       # Sessions, cache files (auto-managed)
-│   └── logs/            # Application log files (app.log)
-├── .env                 # Your local environment variables (never commit this)
-├── .env.example         # Template for .env — commit this
-└── veldora              # CLI entry point: php veldora <command>
+│   ├── app/                  # Private file storage
+│   ├── framework/            # Compiled views, sessions, cache
+│   └── logs/                 # Daily application logs (app.log)
+├── .env                      # Local environment configuration
+├── .env.example              # Environment template
+└── veldora                   # Framework CLI binary (php veldora ...)
 ```
 
-### Environment Configuration
+---
 
-Veldora uses a `.env` file at the root of your project to manage environment-specific settings such as your database credentials and debug mode. This file is never committed to version control.
+### Environment & `.env` Configuration
+
+Veldora loads environment variables from `.env` on every boot before configuration files are read:
 
 ```ini
 APP_NAME=Veldora
-APP_URL=http://localhost:8000
 APP_ENV=local
+APP_KEY=base64:your_generated_app_key_here
 APP_DEBUG=true
+APP_URL=http://localhost:8000
 
 DB_DRIVER=sqlite
 DB_DATABASE=database/veldora.sqlite
 
 SESSION_DRIVER=file
 SESSION_LIFETIME=120
+QUEUE_DRIVER=sync
+CACHE_DRIVER=file
 ```
 
-Access any value from your application using the `env()` helper or the `config()` helper after the value has been defined in a config file.
+Read environment variables in code using the global `env()` or `config()` helpers:
 
 ```php
 $debug = env('APP_DEBUG', false);
-$name  = config('app.name');
+$appName = config('app.name', 'Veldora');
 ```
 
 ---
 
-## Routing
+## 2. Routing & HTTP Layer
 
-## Defining Routes
+All web routes are defined in `routes/web.php`. The framework injects the global `$router` instance automatically.
 
-All application routes are defined in `routes/web.php`. The `$router` variable is automatically available in this file.
+### Basic Routes
 
 ```php
 // routes/web.php
 
-$router->get('/', [HomeController::class, 'index']);
-$router->post('/contact', [ContactController::class, 'store']);
-$router->put('/users/{id}', [UserController::class, 'update']);
-$router->delete('/users/{id}', [UserController::class, 'destroy']);
+use App\Controllers\HomeController;
+use App\Controllers\PostController;
+use App\Controllers\AuthController;
+
+// Closure route returning a view
+$router->get('/', fn() => view('welcome'));
+
+// Controller action route
+$router->get('/posts', [PostController::class, 'index']);
+$router->post('/posts', [PostController::class, 'store']);
+$router->get('/posts/{id}', [PostController::class, 'show']);
+$router->put('/posts/{id}', [PostController::class, 'update']);
+$router->delete('/posts/{id}', [PostController::class, 'destroy']);
 ```
 
 ### Route Parameters
 
-Capture dynamic URL segments by wrapping the segment name in curly braces. The value is automatically passed to your controller method by name.
+Route parameters are wrapped in curly braces and injected directly into controller methods by name:
 
 ```php
-$router->get('/posts/{slug}', [PostController::class, 'show']);
+// Route
+$router->get('/users/{id}/posts/{slug}', [PostController::class, 'userPost']);
 
-// In your controller:
+// Controller
 class PostController
 {
-    public function show(string $slug): Response
+    public function userPost(string $id, string $slug): Response
     {
-        $post = Post::where('slug', '=', $slug)->first();
-        return view('posts.show', compact('post'));
+        $post = Post::where('user_id', '=', $id)
+                    ->where('slug', '=', $slug)
+                    ->first();
+
+        return view('posts.show', ['post' => $post]);
     }
 }
 ```
 
-### Route Groups
+### Route Groups & Middleware
 
-Group routes that share common middleware or a URL prefix:
-
-```php
-// All routes in this group require the user to be logged in
-$router->group(['middleware' => ['auth']], function ($router) {
-    $router->get('/dashboard', [DashboardController::class, 'index']);
-    $router->get('/profile', [ProfileController::class, 'edit']);
-    $router->put('/profile', [ProfileController::class, 'update']);
-});
-
-// Admin-only routes behind a prefix
-$router->group(['prefix' => '/admin', 'middleware' => ['auth', 'admin']], function ($router) {
-    $router->get('/users', [Admin\UserController::class, 'index']);
-});
-```
-
-### Attaching Middleware
-
-You can attach middleware directly to any route:
+Group routes that share common path prefixes or middleware:
 
 ```php
-$router->get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified']);
+// Protected routes
+$router->group(['middleware' => ['auth']], function ($r) {
+    $r->get('/dashboard', [DashboardController::class, 'index']);
+    $r->get('/profile', [ProfileController::class, 'edit']);
+    $r->put('/profile', [ProfileController::class, 'update']);
+});
+
+// Admin group with prefix and dual middleware
+$router->group(['prefix' => '/admin', 'middleware' => ['auth', 'admin']], function ($r) {
+    $r->get('/users', [AdminController::class, 'users']);
+    $r->delete('/users/{id}', [AdminController::class, 'deleteUser']);
+});
 ```
 
 ---
 
-## Controllers
+## 3. Controllers & Requests
 
-## Creating a Controller
+Controllers organize your request handling logic into discrete classes.
 
-Use the CLI to generate a new controller:
+### Generating a Controller
 
 ```bash
 php veldora make:controller PostController
 ```
 
-This creates `app/Controllers/PostController.php`. Controllers are plain PHP classes — each public method handles one route action.
+### Writing Controller Actions
 
 ```php
 namespace App\Controllers;
 
 use Veldora\Framework\Http\Request;
 use Veldora\Framework\Http\Response;
+use App\Models\Post;
 
 class PostController
 {
     public function index(Request $request): Response
     {
-        $posts = Post::all();
-        return view('posts.index', compact('posts'));
+        $page = (int) $request->query('page', 1);
+        $posts = Post::paginate(10, $page);
+
+        return view('posts.index', ['posts' => $posts]);
     }
 
     public function store(Request $request): Response
     {
-        $data = $request->validated(['title' => 'required|min:3', 'body' => 'required']);
+        $validated = $request->validated([
+            'title' => 'required|min:3|max:255',
+            'body'  => 'required',
+        ]);
 
-        $post = new Post();
-        $post->fill($data)->save();
+        $post = Post::create([
+            'title'   => $validated['title'],
+            'body'    => $validated['body'],
+            'user_id' => auth()->id(),
+        ]);
 
-        return Response::redirect('/posts');
+        return Response::redirect('/posts/' . $post->id)
+            ->with('success', 'Post published successfully!');
     }
 }
 ```
 
-### Returning Responses
-
-Controllers can return different types of responses:
+### Response Helpers
 
 ```php
 // Render a view template
-return view('posts.index', ['posts' => $posts]);
+return view('welcome', ['name' => 'World']);
 
-// Return a JSON response (for APIs)
-return Response::json(['status' => 'ok', 'data' => $posts]);
+// Return JSON response (sets application/json header)
+return Response::json(['success' => true, 'data' => $user], 200);
 
-// Redirect the user
+// Redirect to URL
 return Response::redirect('/dashboard');
 
-// Redirect with a flash message
-return Response::redirect('/posts')->with('success', 'Post created!');
+// Redirect with flash message
+return Response::redirect('/posts')->with('success', 'Post saved!');
 ```
 
 ---
 
-## Templates
+## 4. Blade-Inspired Templates
 
-## How Templates Work
+Veldora templates end with `.veldora.php` and live in `resources/views/`. They provide clean syntax and compile to pure PHP without runtime overhead.
 
-Veldora uses its own template engine. Template files have the `.veldora.php` extension and live in `resources/views/`. The engine compiles `@directives` and `{{ expressions }}` into plain PHP before executing.
-
-### Displaying Data
-
-Use double curly braces to display a variable. The output is automatically HTML-escaped to prevent XSS.
+### Outputting Variables
 
 ```html
-<!-- resources/views/posts/show.veldora.php -->
-<h1>{{ $post->title }}</h1>
-<p>By {{ $post->author->name }}</p>
+<!-- Escaped output (prevents XSS) -->
+<h1>&#123;&#123; $post->title &#125;&#125;</h1>
+
+<!-- Raw unescaped HTML -->
+<div>{!! $post->content_html !!}</div>
 ```
 
-To output **unescaped** HTML (use with care):
+### Control Directives
 
 ```html
-{!! $post->body_html !!}
+<!-- Conditionals -->
+&#64;if($user->isAdmin())
+    <span class="badge">Admin</span>
+&#64;elseif($user->isEditor())
+    <span class="badge">Editor</span>
+&#64;else
+    <span>Member</span>
+&#64;endif
+
+<!-- Loops -->
+&#64;foreach($posts as $post)
+    <div class="card">
+        <h3>&#123;&#123; $post->title &#125;&#125;</h3>
+    </div>
+&#64;endforeach
+
+<!-- Forelse with fallback -->
+&#64;forelse($comments as $comment)
+    <p>&#123;&#123; $comment->body &#125;&#125;</p>
+&#64;empty
+    <p>No comments yet.</p>
+&#64;endforelse
+
+<!-- Auth state checks -->
+&#64;auth
+    <a href="/dashboard">Dashboard</a>
+    <a href="/logout">Logout</a>
+&#64;endauth
+
+&#64;guest
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+&#64;endguest
 ```
 
-### Control Flow
+### Layout Inheritance & Yields
+
+Create a parent layout in `resources/views/layouts/app.veldora.php`:
 
 ```html
-@if($user->isAdmin())
-    <a href="/admin">Admin Panel</a>
-@elseif($user->isModerator())
-    <a href="/moderate">Moderate Content</a>
-@else
-    <p>Welcome back, {{ $user->name }}!</p>
-@endif
-
-@foreach($posts as $post)
-    <article>
-        <h2>{{ $post->title }}</h2>
-        <p>{{ $post->excerpt }}</p>
-    </article>
-@endforeach
-
-@forelse($posts as $post)
-    <li>{{ $post->title }}</li>
-@empty
-    <p>No posts yet. Be the first to write one!</p>
-@endforelse
-```
-
-### Layouts and Sections
-
-Define a base layout that all pages share:
-
-```html
-<!-- resources/views/layouts/app.veldora.php -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <title>@yield('title', 'My App')</title>
+    <title>&#64;yield('title', 'My Application')</title>
 </head>
 <body>
-    <nav><!-- navigation here --></nav>
+    <header>
+        <nav><!-- navigation links --></nav>
+    </header>
 
     <main>
-        @yield('content')
+        &#64;yield('content')
     </main>
 
-    <footer>Built with Veldora</footer>
+    <footer>&copy; &#123;&#123; date('Y') &#125;&#125; Veldora</footer>
 </body>
 </html>
 ```
 
-Then extend it in each page:
+Extend it in your page views:
 
 ```html
-<!-- resources/views/posts/index.veldora.php -->
-@extends('layouts.app')
+&#64;extends('layouts.app')
 
-@section('title', 'All Posts')
+&#64;section('title', 'Blog Posts')
 
-@section('content')
-    <h1>Recent Posts</h1>
-    @foreach($posts as $post)
-        <a href="/posts/{{ $post->slug }}">{{ $post->title }}</a>
-    @endforeach
-@endsection
+&#64;section('content')
+    <h1>All Posts</h1>
+    <!-- Page content here -->
+&#64;endsection
 ```
 
-### Components
+### Reusable UI Components
 
-Reusable template pieces are stored in `resources/views/components/`. Use them anywhere with the `<x-component-name>` syntax:
+Use the `<x-component-name>` syntax to render reusable components:
 
 ```html
-<!-- resources/views/components/alert.veldora.php -->
-<div class="alert alert-{{ $variant }}">
-    <strong>{{ $title }}</strong>
-    {{ $slot }}
-</div>
+<x-button variant="primary" size="lg">Save Changes</x-button>
 
-<!-- Usage in a view: -->
-<x-alert variant="success" title="Saved!">
-    Your changes have been saved successfully.
-</x-alert>
+<x-card title="Account Settings">
+    <x-input name="username" label="Username" value="&#123;&#123; $user->name &#125;&#125;" />
+</x-card>
 ```
 
 ---
 
-## Database
+## 5. Database, Schema & Migrations
 
-## Configuration
-
-Set your database connection details in `.env`:
-
-```ini
-DB_DRIVER=sqlite
-DB_DATABASE=database/veldora.sqlite
-
-# For MySQL:
-# DB_DRIVER=mysql
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=myapp
-# DB_USERNAME=root
-# DB_PASSWORD=secret
-```
-
-Veldora supports **SQLite**, **MySQL**, and **PostgreSQL** out of the box.
-
-## Migrations
-
-Migrations are version-controlled database schemas. Each migration describes what should be added, changed, or removed from your database.
+Veldora supports SQLite, MySQL, and PostgreSQL with a unified Schema Blueprint.
 
 ### Creating a Migration
 
 ```bash
 php veldora make:migration create_posts_table
 ```
-
-This generates a file in `database/migrations/`. Open it and define your schema:
 
 ```php
 use Veldora\Framework\Database\Schema\Blueprint;
@@ -364,14 +447,14 @@ class CreatePostsTable extends Migration
     public function up(): void
     {
         Schema::create('posts', function (Blueprint $table) {
-            $table->id();                          // Auto-increment primary key
-            $table->integer('user_id');            // Foreign key to users
-            $table->string('title');               // VARCHAR(255)
-            $table->string('slug')->unique();      // Unique slug for URLs
-            $table->text('body');                  // Long text content
+            $table->id();
+            $table->integer('user_id');
+            $table->string('title');
+            $table->string('slug')->unique();
+            $table->text('body');
             $table->boolean('is_published')->default(0);
             $table->timestamp('published_at')->nullable();
-            $table->timestamps();                  // created_at + updated_at
+            $table->timestamps();
         });
     }
 
@@ -382,42 +465,41 @@ class CreatePostsTable extends Migration
 }
 ```
 
-### Running Migrations
+### Migration Commands
 
 ```bash
-# Run all pending migrations
+# Run pending migrations
 php veldora migrate
 
 # Check migration status
 php veldora migrate:status
 
-# Roll back the last batch
+# Rollback last migration batch
 php veldora migrate:rollback
 
-# Drop everything and re-run from scratch (development only)
+# Reset database & re-run all migrations
 php veldora migrate:fresh
 ```
 
-### Available Column Types
+### Available Blueprint Column Types
 
-| Method | Description |
-|---|---|
-| `->id()` | Auto-increment primary key |
-| `->string('name')` | VARCHAR(255) text |
-| `->text('body')` | Unlimited text |
-| `->integer('count')` | Integer number |
-| `->float('price')` | Floating point number |
-| `->boolean('active')` | True/false (0/1) |
-| `->timestamp('at')` | Date and time |
-| `->timestamps()` | Adds `created_at` and `updated_at` |
-| `->softDeletes()` | Adds `deleted_at` for soft deletion |
-| `->nullable()` | Allows NULL values |
-| `->default(value)` | Sets a default value |
-| `->unique()` | Adds a UNIQUE constraint |
+| Method | SQL Type | Description |
+|---|---|---|
+| `$table->id()` | AUTO_INCREMENT PK | Primary key ID |
+| `$table->string('name', 255)` | VARCHAR(255) | String column |
+| `$table->text('content')` | TEXT | Large text block |
+| `$table->integer('count')` | INT | Integer |
+| `$table->boolean('active')` | TINYINT(1) / INTEGER | Boolean true/false |
+| `$table->timestamp('created_at')` | TIMESTAMP | Date & time |
+| `$table->timestamps()` | created_at + updated_at | Auto timestamp pair |
+| `$table->softDeletes()` | deleted_at | Soft deletion column |
+| `$table->rememberToken()` | remember_token | Auth remember token |
 
-## Models
+---
 
-Each database table has a corresponding Model class. The model name should be the singular, PascalCase version of the table name (e.g. `Post` for `posts`).
+## 6. ActiveRecord Models & Query Builder
+
+Models extend `Veldora\Framework\Database\Model` and map directly to database tables.
 
 ### Creating a Model
 
@@ -425,218 +507,192 @@ Each database table has a corresponding Model class. The model name should be th
 php veldora make:model Post
 ```
 
-This creates `app/Models/Post.php`:
+```php
+namespace App\Models;
+
+use Veldora\Framework\Database\Model;
+use Veldora\Framework\Database\Relations\BelongsTo;
+use Veldora\Framework\Database\Relations\HasMany;
+
+class Post extends Model
+{
+    // Allowed fields for mass assignment
+    protected array $fillable = [
+        'title',
+        'slug',
+        'body',
+        'user_id',
+        'is_published',
+        'published_at',
+    ];
+
+    // Automatic type casting
+    protected array $casts = [
+        'is_published' => 'bool',
+        'published_at' => 'datetime',
+    ];
+
+    // Hidden from JSON serialization
+    protected array $hidden = ['deleted_at'];
+}
+```
+
+### CRUD Operations
+
+```php
+// Create
+$post = Post::create([
+    'title' => 'New Release',
+    'slug'  => 'new-release',
+    'body'  => 'Veldora 1.0 is here!',
+]);
+
+// Find by ID
+$post = Post::find(1);
+
+// Find or fail
+$post = Post::where('slug', '=', 'new-release')->first();
+
+// Update
+$post->title = 'Updated Title';
+$post->save();
+
+// Delete
+$post->delete();
+
+// Query builder chain
+$published = Post::where('is_published', '=', 1)
+                 ->where('user_id', '=', 5)
+                 ->orderBy('created_at', 'DESC')
+                 ->limit(10)
+                 ->get();
+
+// Paginate results
+$paginator = Post::where('is_published', '=', 1)->paginate(15);
+```
+
+---
+
+## 7. Model Relationships
+
+Define relations on your models to traverse database connections seamlessly.
+
+### Relationship Types
 
 ```php
 namespace App\Models;
 
 use Veldora\Framework\Database\Model;
-
-class Post extends Model
-{
-    // Mass-assignable fields (can be filled via create() or fill())
-    protected array $fillable = ['title', 'slug', 'body', 'user_id', 'is_published'];
-
-    // Automatically cast these fields to native PHP types
-    protected array $casts = [
-        'is_published'   => 'bool',
-        'published_at'   => 'datetime',
-    ];
-
-    // These fields are hidden from toArray() and toJson()
-    protected array $hidden = ['password'];
-}
-```
-
-### Basic Model Operations
-
-```php
-// Create and save a new record in one line
-$post = Post::create(['title' => 'Hello World', 'slug' => 'hello-world', 'body' => '...']);
-
-// Find a record by its primary key — returns null if not found
-$post = Post::find(1);
-
-// Retrieve all records
-$posts = Post::all();
-
-// Update a record
-$post->title = 'Updated Title';
-$post->save();
-
-// Delete a record
-$post->delete();
-```
-
-### Querying
-
-```php
-// Chain conditions to build a query
-$published = Post::where('is_published', '=', 1)
-    ->orderBy('published_at', 'DESC')
-    ->limit(10)
-    ->get();
-
-// Fetch only the first match
-$post = Post::where('slug', '=', 'hello-world')->first();
-
-// Count matching records
-$total = Post::where('is_published', '=', 1)->count();
-
-// Paginate results — returns 15 per page by default
-$posts = Post::paginate(15);
-```
-
-### Relationships
-
-Define how models relate to each other directly inside the model class:
-
-```php
-class Post extends Model
-{
-    // A Post belongs to one User
-    public function author(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    // A Post has many Comments
-    public function comments(): HasMany
-    {
-        return $this->hasMany(Comment::class, 'post_id');
-    }
-}
+use Veldora\Framework\Database\Relations\BelongsTo;
+use Veldora\Framework\Database\Relations\HasMany;
+use Veldora\Framework\Database\Relations\BelongsToMany;
 
 class User extends Model
 {
-    // A User has many Posts
+    // One-to-Many
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class, 'user_id');
     }
 
-    // A User belongs to many Roles (many-to-many via pivot table)
+    // Many-to-Many via pivot table
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
     }
 }
+
+class Post extends Model
+{
+    // Inverse One-to-Many
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
 ```
 
-Using relationships:
+### Using Relationships
 
 ```php
-$post = Post::find(1);
-$author = $post->author;           // Related User model
-$comments = $post->comments;       // Collection of Comment models
-
 $user = User::find(1);
-$roles = $user->roles;             // Collection of Role models
 
-// Attach/detach roles from a user
-$user->roles()->attach([1, 2]);
-$user->roles()->detach(3);
-$user->roles()->sync([1, 4]);      // Replace all roles with these
+// Access related models
+$posts = $user->posts;
+
+// Access relation on post
+$post = Post::find(1);
+$authorName = $post->author->name;
+
+// Manage Many-to-Many pivot attachments
+$user->roles()->attach(2);
+$user->roles()->detach(1);
+$user->roles()->sync([2, 3]);
 ```
 
 ---
 
-## Authentication
+## 8. Authentication System
 
-## Setting Up Auth
+Veldora includes complete authentication scaffolding out of the box.
 
-Veldora includes a complete authentication scaffold you can generate with one command:
+### Generating Full Auth Scaffold
 
 ```bash
 php veldora make:auth
-```
-
-This generates login, register, and dashboard pages, a `User` model with migration, and all the controllers you need. After running it, apply the migration:
-
-```bash
 php veldora migrate
 ```
 
-You now have a fully functional login/register system.
+This generates:
+- `app/Controllers/AuthController.php`
+- `app/Models/User.php`
+- `database/migrations/2026_07_15_000000_create_users_table.php`
+- `resources/views/auth/login.veldora.php`
+- `resources/views/auth/register.veldora.php`
+- `resources/views/dashboard.veldora.php`
+- Auth routes in `routes/web.php`
 
-## Checking Authentication Status
-
-In your routes, use the `auth` middleware to protect pages:
-
-```php
-$router->get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth']);
-```
-
-In your controllers and templates, use the `auth()` helper:
+### Auth Helpers & Methods
 
 ```php
-// In a controller
+// Check if user is logged in
 if (auth()->check()) {
-    $user = auth()->user();  // Get the current User model
+    $user = auth()->user();
+    $userId = auth()->id();
 }
 
-// Log the user in
-auth()->login($user);
+// Log a user in manually
+auth()->login($user, $remember = true);
 
-// Log the user out
+// Log out current user
 auth()->logout();
-```
-
-In templates:
-
-```html
-@auth
-    <p>Welcome, {{ auth()->user()->name }}!</p>
-    <a href="/logout">Logout</a>
-@endauth
-
-@guest
-    <a href="/login">Login</a>
-    <a href="/register">Register</a>
-@endguest
 ```
 
 ---
 
-## Validation
+## 9. Validation & Form Requests
 
-## Validating Input
-
-The simplest way to validate a request is in the controller using `$request->validated()`:
+### Inline Validation in Controllers
 
 ```php
 public function store(Request $request): Response
 {
     $data = $request->validated([
         'title' => 'required|min:5|max:255',
-        'email' => 'required|email',
-        'body'  => 'required',
+        'email' => 'required|email|unique:users,email',
+        'age'   => 'nullable|integer|min:18',
     ]);
 
-    // $data only contains the validated fields
-    Post::create($data);
+    User::create($data);
 
-    return Response::redirect('/posts')->with('success', 'Created!');
+    return Response::redirect('/users');
 }
 ```
 
-If validation fails, the user is automatically redirected back with the errors and old input available in the template:
-
-```html
-@if($errors->has('title'))
-    <p class="error">{{ $errors->first('title') }}</p>
-@endif
-
-<input name="title" value="{{ old('title') }}">
-```
-
-## Form Request Classes
-
-For more complex validation logic, generate a dedicated request class:
+### Custom FormRequest Classes
 
 ```bash
-php veldora make:request StorePostRequest
+php veldora make:request StoreUserRequest
 ```
 
 ```php
@@ -644,114 +700,68 @@ namespace App\Http\Requests;
 
 use Veldora\Framework\Http\FormRequest;
 
-class StorePostRequest extends FormRequest
+class StoreUserRequest extends FormRequest
 {
-    // Who is allowed to make this request?
     public function authorize(): bool
     {
         return auth()->check();
     }
 
-    // What are the validation rules?
     public function rules(): array
     {
         return [
-            'title' => 'required|min:5|max:255',
-            'body'  => 'required',
-            'tags'  => 'array',
+            'name'     => 'required|min:2',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
         ];
     }
 }
 ```
 
-### Available Validation Rules
+---
 
-| Rule | What it checks |
+## 10. CLI Console & Make Commands
+
+The `php veldora` CLI binary provides generators and maintenance utilities.
+
+| Command | Description |
 |---|---|
-| `required` | Field must be present and not empty |
-| `email` | Must be a valid email address |
-| `min:N` | Minimum length (strings) or value (numbers) of N |
-| `max:N` | Maximum length (strings) or value (numbers) of N |
-| `numeric` | Must be a number |
-| `integer` | Must be a whole number |
-| `boolean` | Must be true, false, 0, or 1 |
-| `array` | Must be an array |
-| `unique:table,column` | Value must not exist in the given database table |
-| `confirmed` | Must match a `field_confirmation` field |
-| `nullable` | Field may be null or absent |
+| `php veldora serve` | Start local development server |
+| `php veldora make:controller <Name>` | Scaffold a new HTTP Controller |
+| `php veldora make:model <Name>` | Scaffold an ActiveRecord Model |
+| `php veldora make:migration <name>` | Create a new database migration |
+| `php veldora make:middleware <Name>` | Create a custom middleware |
+| `php veldora make:request <Name>` | Create a validated FormRequest class |
+| `php veldora make:resource <Name>` | Create an API JSON Resource transformer |
+| `php veldora make:job <Name>` | Scaffold a background queue job |
+| `php veldora make:event <Name>` | Scaffold a dispatchable event |
+| `php veldora make:listener <Name>` | Scaffold an event listener |
+| `php veldora make:mail <Name>` | Scaffold a Mailable email class |
+| `php veldora make:seeder <Name>` | Create a database seeder |
+| `php veldora make:factory <Name>` | Create a model factory for testing |
+| `php veldora make:auth` | Generate full login, register, dashboard auth system |
+| `php veldora migrate` | Run pending database migrations |
+| `php veldora migrate:rollback` | Rollback last migration batch |
+| `php veldora migrate:fresh` | Drop all tables and re-run all migrations |
+| `php veldora queue:work` | Start background queue worker |
+| `php veldora ui:list` | List all 21 available UI components |
+| `php veldora add <components...>` | Copy UI components into views/components/ |
 
 ---
 
-## CLI Commands
+## 11. Events & Listeners
 
-## The Veldora CLI
+Decouple application logic using events and listeners.
 
-All CLI commands are run as `php veldora <command>`. Run `php veldora list` to see every available command.
-
-### Code Generators (make:*)
-
-These commands scaffold files so you don't have to write boilerplate:
-
-| Command | What it creates |
-|---|---|
-| `php veldora make:controller PostController` | A new controller class |
-| `php veldora make:model Post` | A new model class |
-| `php veldora make:migration create_posts_table` | A new migration file |
-| `php veldora make:middleware LogRequests` | A new middleware class |
-| `php veldora make:request StorePostRequest` | A form validation class |
-| `php veldora make:resource PostResource` | An API resource transformer |
-| `php veldora make:job SendEmail` | A background queue job |
-| `php veldora make:event UserRegistered` | An event class |
-| `php veldora make:listener SendWelcomeEmail` | An event listener |
-| `php veldora make:mail WelcomeEmail` | A mailable email class |
-| `php veldora make:seeder UserSeeder` | A database seeder |
-| `php veldora make:factory UserFactory` | A model factory for testing |
-| `php veldora make:auth` | Full auth scaffold (login, register, etc.) |
-| `php veldora make:command MyCommand` | A custom CLI command |
-
-### Database Commands
-
-| Command | What it does |
-|---|---|
-| `php veldora migrate` | Run all pending migrations |
-| `php veldora migrate:rollback` | Undo the last migration batch |
-| `php veldora migrate:fresh` | Drop all tables and re-run migrations |
-| `php veldora migrate:status` | Show which migrations have run |
-| `php veldora db:seed` | Run all database seeders |
-
-### Queue Commands
-
-| Command | What it does |
-|---|---|
-| `php veldora queue:work` | Start the background queue worker |
-| `php veldora queue:failed` | List all failed jobs |
-| `php veldora queue:retry {id}` | Retry a specific failed job |
-| `php veldora queue:clear` | Delete all pending and failed jobs |
-
-### Other Commands
-
-| Command | What it does |
-|---|---|
-| `php veldora serve` | Start the built-in PHP dev server on port 8000 |
-| `php veldora env` | Display all current environment variables |
-| `php veldora ui:list` | List all available UI components |
-| `php veldora add button input modal` | Add UI components to your project |
-
----
-
-## Events
-
-## How Events Work
-
-Events allow different parts of your application to communicate without creating tight dependencies. When something happens (like a user registers), you fire an event. Any number of listeners can respond to it independently.
-
-### Step 1 — Create an Event
+### Generating Events & Listeners
 
 ```bash
 php veldora make:event UserRegistered
+php veldora make:listener SendWelcomeNotification
 ```
 
 ```php
+// app/Events/UserRegistered.php
 namespace App\Events;
 
 use App\Models\User;
@@ -761,110 +771,91 @@ class UserRegistered extends Event
 {
     public function __construct(public readonly User $user) {}
 }
-```
 
-### Step 2 — Create a Listener
-
-```bash
-php veldora make:listener SendWelcomeEmail --event=UserRegistered
-```
-
-```php
+// app/Listeners/SendWelcomeNotification.php
 namespace App\Listeners;
 
-use App\Events\UserRegistered;
 use Veldora\Framework\Events\Event;
 use Veldora\Framework\Events\Listener;
+use App\Mail\WelcomeEmail;
 
-class SendWelcomeEmail implements Listener
+class SendWelcomeNotification implements Listener
 {
     public function handle(Event $event): void
     {
-        // Send a welcome email to the new user
         mailer($event->user->email)->send(new WelcomeEmail($event->user));
     }
 }
 ```
 
-### Step 3 — Dispatch the Event
-
-Fire the event anywhere in your application — usually in a controller after an action completes:
+### Dispatching Events
 
 ```php
 use App\Events\UserRegistered;
 
-// In your RegisterController:
-$user = User::create($data);
-
+// Dispatch with class method or helper
 UserRegistered::dispatch($user);
-// or: event(new UserRegistered($user));
+// or
+event(new UserRegistered($user));
 ```
 
 ---
 
-## Queue System
+## 12. Background Queues & Jobs
 
-## Background Jobs
-
-The queue lets you defer slow operations (like sending email or processing images) to run in the background so your user doesn't have to wait.
+Run time-consuming operations asynchronously in worker processes.
 
 ### Creating a Job
 
 ```bash
-php veldora make:job SendWelcomeEmail
+php veldora make:job ProcessVideo
 ```
 
 ```php
 namespace App\Jobs;
 
-use App\Models\User;
 use Veldora\Framework\Queue\Job;
 
-class SendWelcomeEmail extends Job
+class ProcessVideo extends Job
 {
-    public int $maxTries = 3;      // Retry up to 3 times on failure
-    public int $retryAfter = 60;   // Wait 60 seconds before retrying
+    public int $maxTries = 3;
+    public int $retryAfter = 60;
 
-    public function __construct(public readonly User $user) {}
+    public function __construct(public readonly int $videoId) {}
 
     public function handle(): void
     {
-        // This runs in the background worker process
-        mailer($this->user->email)->send(new WelcomeEmail($this->user));
+        // Process video in background worker
     }
 }
 ```
 
-### Dispatching a Job
+### Dispatching Jobs & Running Worker
 
 ```php
-// Push to the queue — runs in background
-SendWelcomeEmail::dispatch($user);
+// Dispatch immediately to queue
+ProcessVideo::dispatch($video->id);
 
-// Push to a specific queue channel
-SendWelcomeEmail::dispatch($user)->onQueue('emails');
+// Dispatch with delay
+ProcessVideo::dispatch($video->id)->delay(120);
 
-// Delay the job by 5 minutes
-SendWelcomeEmail::dispatch($user)->delay(300);
+// Dispatch to specific queue channel
+ProcessVideo::dispatch($video->id)->onQueue('media');
 ```
 
-### Running the Worker
-
-Start the queue worker in a separate terminal window. It will continuously poll for new jobs:
+Start the queue worker:
 
 ```bash
 php veldora queue:work --queue=default --sleep=3
 ```
 
-For production, use a process manager like **Supervisor** to keep the worker running.
-
 ---
 
-## Mail
+## 13. Mail & SMTP Transport
 
-## Sending Email
+Send beautifully formatted emails using Mailable classes.
 
-Create a Mailable class to represent each type of email your app sends:
+### Creating a Mailable
 
 ```bash
 php veldora make:mail WelcomeEmail
@@ -883,196 +874,121 @@ class WelcomeEmail extends Mailable
     public function build(): static
     {
         return $this
-            ->subject("Welcome to Veldora, {$this->user->name}!")
+            ->subject('Welcome to Veldora!')
             ->view('emails.welcome', ['user' => $this->user]);
     }
 }
 ```
 
-### Sending
+### Sending and Queueing Emails
 
 ```php
-// Send immediately (blocks until delivered)
+// Send immediately via SMTP
 mailer($user->email)->send(new WelcomeEmail($user));
 
-// Queue for background delivery (recommended for production)
+// Queue email for background delivery
 mailer($user->email)->queue(new WelcomeEmail($user));
 ```
 
-### Mail Configuration
-
-Set up your SMTP credentials in `.env`:
-
-```ini
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=587
-MAIL_USERNAME=your_username
-MAIL_PASSWORD=your_password
-MAIL_FROM_ADDRESS=hello@example.com
-MAIL_FROM_NAME=MyApp
-```
-
-For local development, set `MAIL_MAILER=array` to capture emails without actually sending them.
-
 ---
 
-## Cache
+## 14. Cache System
 
-## Caching Data
-
-Use the `cache()` helper to store and retrieve values. Caching expensive database queries or API calls dramatically improves performance.
+Cache expensive queries or API responses using the file or memory cache drivers.
 
 ```php
-// Store a value for 1 hour (3600 seconds)
-cache(['site_stats' => $stats], 3600);
+// Store for 10 minutes (600 seconds)
+cache(['top_posts' => $posts], 600);
 
-// Retrieve a cached value (returns null if not found or expired)
-$stats = cache('site_stats');
+// Retrieve cached item
+$posts = cache('top_posts');
 
-// The most common pattern: retrieve or compute
-$popularPosts = cache()->remember('popular_posts', 600, function () {
-    return Post::where('views', '>', 1000)->orderBy('views', 'DESC')->limit(10)->get();
+// Remember pattern: fetch or compute
+$stats = cache()->remember('dashboard_stats', 3600, function () {
+    return [
+        'users' => User::count(),
+        'posts' => Post::count(),
+    ];
 });
 
-// Delete a cached value
-cache()->forget('site_stats');
+// Remove from cache
+cache()->forget('top_posts');
 
-// Atomic counter — great for tracking views or rate limiting
-cache()->increment('post_views_1');
-cache()->decrement('remaining_attempts');
+// Atomic counter increments
+cache()->increment('page_views_123');
 ```
-
-### Cache Configuration
-
-Change the cache driver in `config/cache.php`:
-
-```php
-'default' => env('CACHE_DRIVER', 'file'),
-```
-
-| Driver | Description |
-|---|---|
-| `file` | Stores cache in `storage/framework/cache/` (default) |
-| `array` | In-memory only — useful for testing |
 
 ---
 
-## File Storage
+## 15. File Storage & Disks
 
-## Storing Files
-
-The storage system gives you a clean, consistent API for working with files regardless of where they are stored.
+Manage local and public files with the filesystem abstraction.
 
 ```php
-// Write a file to the public disk (web-accessible)
-storage('public')->put('avatars/user-42.png', $fileContents);
+// Store user avatar on public disk
+storage('public')->put('avatars/user-1.png', $binaryData);
 
-// Read a file
-$contents = storage('local')->get('reports/annual.pdf');
+// Read file contents
+$content = storage('local')->get('exports/report.csv');
 
-// Check if a file exists
-if (storage('public')->exists('avatars/user-42.png')) {
-    // ...
+// Check existence
+if (storage('public')->exists('avatars/user-1.png')) {
+    // Generate public web URL: /storage/avatars/user-1.png
+    $url = storage('public')->url('avatars/user-1.png');
 }
 
-// Get the public URL for a file
-$url = storage('public')->url('avatars/user-42.png');
-// Returns: /storage/avatars/user-42.png
-
-// Delete a file
+// Delete file
 storage('public')->delete('avatars/old-avatar.png');
 ```
 
-### Storage Configuration
+---
 
-Disks are configured in `config/filesystems.php`:
+## 16. PSR-3 Logging
+
+Write structured logs to daily rotating files in `storage/logs/app.log`.
 
 ```php
-'disks' => [
-    'local'  => ['driver' => 'local', 'root' => storage_path('app')],
-    'public' => ['driver' => 'local', 'root' => storage_path('app/public'), 'url' => '/storage'],
-],
+log_info('User signed in', ['user_id' => $user->id, 'ip' => $request->ip()]);
+log_error('Payment gateway failure', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+
+logger()->warning('Rate limit approaching threshold', ['attempts' => 95]);
+logger()->critical('Database connection lost!');
 ```
 
 ---
 
-## Logging
+## 17. HTTP Client
 
-## Writing Logs
-
-Use the logging helpers to record events, errors, and debug information to `storage/logs/app.log`.
-
-```php
-// Different log levels
-log_info('User logged in', ['user_id' => $user->id]);
-log_error('Payment failed', ['order_id' => $order->id, 'reason' => $e->getMessage()]);
-
-// Or use the logger() helper for more flexibility
-logger()->warning('Disk usage is high', ['usage' => '85%']);
-logger()->critical('Database connection failed');
-
-// Log an exception with full stack trace
-logger()->error('Uncaught exception', ['exception' => $e]);
-```
-
-Log entries include timestamps, log level, message, and any context data you pass. By default, logs rotate daily so you don't end up with a single enormous file.
-
----
-
-## HTTP Client
-
-## Making HTTP Requests
-
-Use the `Http` facade to make HTTP requests to external APIs:
+Make outbound HTTP requests to third-party APIs.
 
 ```php
 use Veldora\Framework\Http\Client\Http;
 
-// Simple GET request
-$response = Http::get('https://api.github.com/users/octocat');
+// GET Request
+$response = Http::get('https://api.github.com/users/veldorahq');
 
-// POST request with JSON body
-$response = Http::post('https://api.example.com/orders', [
-    'product_id' => 42,
-    'quantity'   => 3,
-]);
-
-// With authentication and custom headers
-$response = Http::withToken('your-api-token')
+// POST Request with Bearer Token
+$response = Http::withToken('api_key_123')
     ->acceptJson()
-    ->get('https://api.example.com/me');
+    ->post('https://api.example.com/orders', [
+        'item'     => 'Widget',
+        'quantity' => 2,
+    ]);
 
-// Check response and extract data
 if ($response->successful()) {
-    $name = $response->json('name');
-    $data = $response->json();     // Full response as array
+    $data = $response->json();
+    $status = $response->status();
 }
 
-// Handle failures
-if ($response->failed()) {
-    log_error('API call failed', ['status' => $response->status()]);
-}
-```
-
-### Retries
-
-Automatically retry a request on failure:
-
-```php
-$response = Http::retry(3, 1000)  // 3 attempts, 1 second between each
-    ->get('https://api.example.com/data');
+// Automatic retries on failure
+$response = Http::retry(3, 500)->get('https://unstable-api.com/feed');
 ```
 
 ---
 
-## API Resources
+## 18. API JSON Resources
 
-## Transforming API Responses
-
-JSON Resources give you a clean layer between your database models and your API responses. They let you control exactly what data is returned and in what format.
-
-### Creating a Resource
+Transform models into clean, structured JSON API responses.
 
 ```bash
 php veldora make:resource PostResource
@@ -1090,8 +1006,9 @@ class PostResource extends JsonResource
         return [
             'id'           => $this->id,
             'title'        => $this->title,
-            'excerpt'      => substr($this->body, 0, 150),
-            'published_at' => $this->published_at?->format('Y-m-d'),
+            'slug'         => $this->slug,
+            'excerpt'      => substr($this->body, 0, 120),
+            'published_at' => $this->published_at?->format('Y-m-d H:i:s'),
             'author'       => [
                 'id'   => $this->author->id,
                 'name' => $this->author->name,
@@ -1101,138 +1018,54 @@ class PostResource extends JsonResource
 }
 ```
 
-### Using Resources in Controllers
-
 ```php
-// Return a single resource
+// In your controller:
 return (new PostResource($post))->toResponse();
 
-// Return a collection
-return PostResource::collection(Post::all())->toResponse();
-
-// Return a paginated collection — includes pagination links automatically
-return PostResource::collection(Post::paginate(15))->toResponse();
-```
-
-The paginated response includes `links` and `meta` blocks automatically:
-
-```json
-{
-    "data": [...],
-    "links": {
-        "first": "/api/posts?page=1",
-        "next": "/api/posts?page=2",
-        "last": "/api/posts?page=5"
-    },
-    "meta": {
-        "current_page": 1,
-        "per_page": 15,
-        "total": 72
-    }
-}
+// Or return paginated collection with meta & links:
+return PostResource::collection(Post::paginate(10))->toResponse();
 ```
 
 ---
 
-## Testing
+## 19. Testing & Model Factories
 
-## Writing Tests
+Veldora includes an expressive testing framework built on top of PHPUnit.
 
-Veldora ships with a testing foundation built on top of PHPUnit. Your test classes can extend `TestCase` to get HTTP helpers and other utilities.
-
-### HTTP Tests
+### Writing HTTP Feature Tests
 
 ```php
+namespace Tests\Feature;
+
 use Veldora\Framework\Testing\TestCase;
+use Database\Factories\UserFactory;
+use Database\Factories\PostFactory;
 
 class PostTest extends TestCase
 {
-    public function test_homepage_loads(): void
+    public function test_guests_cannot_create_posts(): void
     {
-        $response = $this->get('/');
-        $response->assertOk();
-        $response->assertSee('Welcome');
-    }
-
-    public function test_creating_a_post_requires_auth(): void
-    {
-        $response = $this->post('/posts', ['title' => 'Test', 'body' => 'Content']);
-        $response->assertStatus(302); // Redirect to login
+        $response = $this->post('/posts', ['title' => 'Test', 'body' => 'Body']);
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
     }
 
     public function test_authenticated_user_can_create_post(): void
     {
-        $user = UserFactory::new()->create();
+        $user = (new UserFactory())->create();
+
         $response = $this->actingAs($user)->post('/posts', [
-            'title' => 'My Post',
-            'body'  => 'Post content here',
+            'title' => 'My First Post',
+            'body'  => 'This is the body content.',
         ]);
+
         $response->assertRedirect('/posts');
+        $this->assertDatabaseHas('posts', ['title' => 'My First Post']);
     }
 }
 ```
 
-### Available Assertions
-
-| Method | Checks |
-|---|---|
-| `->assertOk()` | Status is 200 |
-| `->assertStatus(201)` | Status is the given code |
-| `->assertRedirect('/url')` | Response redirects to the given URL |
-| `->assertSee('text')` | Response body contains the text |
-| `->assertDontSee('text')` | Response body does not contain the text |
-| `->assertJson(['key' => 'val'])` | Response JSON contains the given data |
-| `->assertJsonFragment(['key' => 'val'])` | Response JSON contains this fragment |
-| `->assertHeader('X-Header', 'value')` | Response has the given header |
-
-### Model Factories
-
-Factories let you generate test data quickly without writing raw database inserts:
-
-```bash
-php veldora make:factory PostFactory --model=Post
-```
-
-```php
-namespace Database\Factories;
-
-use App\Models\Post;
-use Veldora\Framework\Database\Factories\Factory;
-
-class PostFactory extends Factory
-{
-    protected string $model = Post::class;
-
-    public function definition(): array
-    {
-        return [
-            'title'        => 'Sample Post ' . rand(1, 999),
-            'slug'         => 'sample-post-' . rand(1, 999),
-            'body'         => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            'is_published' => 1,
-            'user_id'      => 1,
-        ];
-    }
-}
-```
-
-Using factories in tests:
-
-```php
-// Create 1 model and save to database
-$post = (new PostFactory())->create();
-
-// Create 5 models
-$posts = (new PostFactory())->count(5)->create();
-
-// Create with specific attributes
-$post = (new PostFactory())->create(['title' => 'My Specific Title']);
-
-// Make without saving (in-memory only)
-$post = (new PostFactory())->make();
-```
-
-### Running Tests
+### Running the Test Suite
 
 ```bash
 php vendor/bin/phpunit
@@ -1240,171 +1073,126 @@ php vendor/bin/phpunit
 
 ---
 
-## UI Components
+## 20. Veldora UI (21 Components)
 
-## Installing Components
-
-Veldora UI provides 21 pre-built, accessible components. Add them to your project with one command:
+Add pre-built accessible UI components directly into your project:
 
 ```bash
-# See all available components
+# List all 21 components
 php veldora ui:list
 
-# Add individual components
-php veldora add button input card modal alert
+# Install specific components
+php veldora add button input modal tabs card toast alert
 
-# Add all components at once
+# Install all components
 php veldora add button input textarea select checkbox radio badge alert card modal spinner avatar dropdown navbar toast tabs accordion progress tooltip breadcrumb table
 ```
 
-Each command copies the component template to `resources/views/components/` so you own the code and can customize it freely.
-
-## Using Components
-
-Once added, use components with the `<x-component-name>` syntax in any view:
+### Using Components in Views
 
 ```html
 <!-- Button -->
-<x-button variant="primary">Submit Form</x-button>
-<x-button variant="ghost" size="sm">Cancel</x-button>
-
-<!-- Input with validation error -->
-<x-input name="email" label="Email Address" type="email" :error="$errors->first('email')" />
-
-<!-- Alert message -->
-<x-alert variant="success" title="Saved!" dismissible>
-    Your changes have been saved successfully.
-</x-alert>
-
-<!-- Card -->
-<x-card title="Recent Posts">
-    <p>Card body content goes here.</p>
-</x-card>
+<x-button variant="primary" size="md">Click Me</x-button>
 
 <!-- Modal -->
-<x-modal id="confirm-delete" title="Confirm Delete">
-    <p>Are you sure you want to delete this item?</p>
+<x-modal id="confirm-modal" title="Confirm Action">
+    <p>Are you sure you want to proceed?</p>
     <x-slot name="footer">
-        <x-button variant="danger" onclick="closeModal('confirm-delete')">Delete</x-button>
-        <x-button variant="ghost" onclick="closeModal('confirm-delete')">Cancel</x-button>
+        <x-button variant="danger">Delete</x-button>
     </x-slot>
 </x-modal>
+
+<!-- Tabs -->
+<x-tabs :tabs="['overview' => 'Overview', 'settings' => 'Settings']" active="overview">
+    <div id="tab-overview">Overview Content</div>
+    <div id="tab-settings">Settings Content</div>
+</x-tabs>
 ```
-
-## Component Reference
-
-| Component | Key Props |
-|---|---|
-| **Button** | `variant` (primary, secondary, ghost, danger), `size` (sm, md, lg) |
-| **Input** | `name`, `label`, `type`, `value`, `error`, `required` |
-| **Textarea** | `name`, `label`, `rows`, `error` |
-| **Select** | `name`, `label`, `options` (array), `selected`, `error` |
-| **Checkbox** | `name`, `label`, `value`, `checked` |
-| **Radio** | `name`, `value`, `label`, `checked` |
-| **Badge** | `variant` (default, success, warning, danger, info), `dot` |
-| **Alert** | `variant`, `title`, `dismissible` |
-| **Card** | `title`, `subtitle`, footer slot |
-| **Modal** | `id`, `title`, `size` (sm, md, lg, xl) |
-| **Spinner** | `size` (sm, md, lg), `label` |
-| **Avatar** | `src`, `name` (initials fallback), `size`, `shape` |
-| **Dropdown** | `label`, `align` (left, right) |
-| **Navbar** | `brand`, `brandHref`, `sticky` |
-| **Toast** | `id`, `variant`, `message`, `duration` (ms) |
-| **Tabs** | `id`, `tabs` (array key=>label), `active` |
-| **Accordion** | `id`, `title`, `open` |
-| **Progress** | `value` (0-100), `variant`, `striped`, `animated` |
-| **Tooltip** | `text`, `position` (top, bottom, left, right) |
-| **Breadcrumb** | `items` (array of label+href) |
-| **Table** | `striped`, `hover`, `bordered`, `compact` |
 
 ---
 
-## VS Code Extension
+## 21. VS Code Extension
 
-## Installing the Extension
+The official **Veldora VS Code Extension** provides syntax highlighting, autocomplete, and 32 snippets for `.veldora.php` files.
 
-The Veldora VS Code extension adds full syntax highlighting, snippets, and auto-completion for `.veldora.php` template files.
+### Installation
 
-Install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=veldora.veldora-vscode) or from the command line:
+Install directly from the VS Code Marketplace:
 
 ```bash
 code --install-extension veldora.veldora-vscode
 ```
 
-## What You Get
+### Popular Snippets
 
-- **Syntax highlighting** — `@directives`, `{{ expressions }}`, and embedded PHP all highlighted correctly
-- **32 snippets** — type `v-if`, `v-foreach`, `v-comp`, etc. and press Tab to expand
-- **Bracket matching** — `@if` pairs with its `@endif` automatically
-- **Embedded PHP** — full PHP IntelliSense inside template files
-
-## Snippet Quick Reference
-
-| Prefix | Expands to |
+| Prefix | Expands To |
 |---|---|
-| `v-if` | `@if ... @endif` |
-| `v-foreach` | `@foreach ... @endforeach` |
-| `v-forelse` | `@forelse ... @empty ... @endforelse` |
-| `v-unless` | `@unless ... @endunless` |
-| `v-extends` | `@extends('layout')` |
-| `v-section` | `@section('name') ... @endsection` |
-| `v-yield` | `@yield('name')` |
-| `v-comp` | `<x-component> ... </x-component>` |
-| `v-auth` | `@auth ... @endauth` |
-| `v-guest` | `@guest ... @endguest` |
-| `v-csrf` | `@csrf` |
-| `v-dump` | `@dump($var)` |
-| `v-esc` | `{{ $variable }}` |
+| `v-if` | `&#64;if(...) ... &#64;endif` |
+| `v-foreach` | `&#64;foreach(...) ... &#64;endforeach` |
+| `v-forelse` | `&#64;forelse(...) ... &#64;empty ... &#64;endforelse` |
+| `v-extends` | `&#64;extends('layouts.app')` |
+| `v-section` | `&#64;section('name') ... &#64;endsection` |
+| `v-yield` | `&#64;yield('name')` |
+| `v-auth` | `&#64;auth ... &#64;endauth` |
+| `v-guest` | `&#64;guest ... &#64;endguest` |
+| `v-comp` | `<x-component-name>...</x-component-name>` |
 
 ---
 
-## AI Context Prompt
+## 22. AI Context Prompt & AI Skills
 
-## Using Veldora with AI Assistants
+Teach any AI model (Claude, ChatGPT, Gemini, Cursor, Copilot) the full Veldora API so it can write flawless, idiomatic Veldora code without hallucinations.
 
-Copy the prompt below and paste it at the start of any conversation with an AI assistant (like Claude, ChatGPT, or Gemini). The AI will then know the full Veldora API and can generate correct, idiomatic Veldora code without making things up.
+### Complete AI Master Prompt
 
----
+Copy the prompt below and paste it into your AI assistant:
 
-> You are an expert in the **Veldora PHP framework** (version 1.0). Veldora is a modern PHP 8.2+ MVC framework inspired by Laravel but completely independent. Here is a complete reference of its API:
->
-> **Routing:** `$router->get/post/put/delete/patch($uri, $handler)->middleware([...])`. Groups via `$router->group(['prefix' => '/api', 'middleware' => ['auth']], fn($r) => ...)`.
->
-> **Controllers:** Plain PHP classes. Methods receive `Request $request`. Return `view()`, `Response::json()`, or `Response::redirect()`.
->
-> **Templates:** Files end in `.veldora.php`. Use `@extends`, `@section`, `@yield`, `@if/@endif`, `@foreach/@endforeach`, `@forelse/@empty/@endforelse`, `@auth/@endauth`, `@guest/@endguest`. Variables: `{{ $var }}` (escaped), `{!! $var !!}` (raw). Components: `<x-button variant="primary">Label</x-button>`.
->
-> **Models:** Extend `Veldora\Framework\Database\Model`. Properties: `$table`, `$fillable`, `$guarded`, `$casts`, `$hidden`. Methods: `::find($id)`, `::all()`, `::create($data)`, `->save()`, `->delete()`, `->where()->get()`, `->paginate(15)`. Relations: `hasMany()`, `belongsTo()`, `belongsToMany()`, `hasManyThrough()`.
->
-> **Auth:** `auth()->check()`, `auth()->user()`, `auth()->login($user)`, `auth()->logout()`. Middleware aliases: `auth`, `guest`, `admin`, `verified`.
->
-> **Validation:** `$request->validated(['field' => 'required|min:3'])`. Or `make:request` form request class with `rules()` and `authorize()` methods. Rules: `required`, `email`, `min:N`, `max:N`, `numeric`, `unique:table,col`, `confirmed`, `nullable`.
->
-> **Cache:** `cache(['key' => $val], $ttl)`, `cache('key')`, `cache()->remember('key', $ttl, fn() => ...)`, `cache()->forget('key')`, `cache()->increment('key')`.
->
-> **Storage:** `storage('public')->put($path, $contents)`, `->get($path)`, `->exists($path)`, `->url($path)`, `->delete($path)`.
->
-> **Logging:** `log_info('msg', $ctx)`, `log_error('msg', $ctx)`, `logger()->warning('msg')`.
->
-> **Mail:** `mailer($email)->send(new MyMailable())`, `mailer($email)->queue(new MyMailable())`. Mailables extend `Mailable` and implement `build()` returning `$this->subject()->view()`.
->
-> **Queue:** Jobs extend `Job`, implement `handle()`. Dispatch: `MyJob::dispatch($args)->onQueue('name')->delay(60)`. Worker: `php veldora queue:work`.
->
-> **Events:** Events extend `Event`. Dispatch: `MyEvent::dispatch($data)` or `event(new MyEvent($data))`. Listeners implement `handle(Event $event)`.
->
-> **HTTP Client:** `Http::get($url)`, `Http::post($url, $data)`, `Http::withToken($t)->acceptJson()->get($url)`. Response: `->json()`, `->successful()`, `->status()`.
->
-> **API Resources:** Extend `JsonResource`, implement `toArray($request)`. Use: `new MyResource($model)`, `MyResource::collection($collection)`.
->
-> **Testing:** Extend `TestCase`. Methods: `$this->get/post/put/delete($uri, $data)`, `->actingAs($user)`. Assertions: `->assertOk()`, `->assertStatus(N)`, `->assertRedirect()`, `->assertSee()`, `->assertJson()`.
->
-> **CLI generators:** `php veldora make:controller`, `make:model`, `make:migration`, `make:middleware`, `make:request`, `make:resource`, `make:job`, `make:event`, `make:listener`, `make:mail`, `make:seeder`, `make:factory`, `make:auth`, `make:command`. DB: `migrate`, `migrate:rollback`, `migrate:fresh`, `migrate:status`, `db:seed`. Queue: `queue:work`, `queue:failed`, `queue:retry`, `queue:clear`. UI: `ui:list`, `add <component>`.
->
-> Generate complete, working Veldora code. Never use Laravel-specific classes or helpers that don't exist in Veldora.
+```
+You are an expert full-stack developer in the Veldora PHP Framework (v1.0.0).
+Veldora is an independent modern PHP 8.2+ MVC framework with zero framework magic.
 
----
+Here is the exact API reference you must strictly follow:
 
-> **Framework Version:** `v1.0.0`
-> **Test Coverage:** 87 tests, 344 assertions — all passing
-> **PHP Required:** 8.2+
-> **License:** MIT
+1. ARCHITECTURE & FOLDERS:
+   - Controllers: app/Controllers/ (methods take Request $request, return Response)
+   - Models: app/Models/ (extend Veldora\Framework\Database\Model)
+   - Views: resources/views/*.veldora.php (render with view('name', $data))
+   - Routes: routes/web.php ($router->get/post/put/delete/group)
+   - Migrations: database/migrations/ (extend Migration, use Schema::create(table, fn(Blueprint $table) => ...))
+   - Commands: php veldora make:controller, make:model, make:migration, make:auth, make:job, make:event, make:listener, make:mail, make:request, make:resource, make:factory, migrate, migrate:rollback, migrate:fresh, queue:work, serve
+
+2. ROUTING & CONTROLLERS:
+   $router->get('/path', [Controller::class, 'method']);
+   $router->group(['prefix' => '/admin', 'middleware' => ['auth', 'admin']], function ($r) { ... });
+   Controllers return: view('name', $data), Response::json($data, 200), Response::redirect('/url')->with('key', 'val').
+
+3. TEMPLATES (.veldora.php):
+   - Escaped output: {{ $var }}, Raw output: {!! $raw !!}
+   - Control: @if($cond)...@elseif($cond)...@else...@endif
+   - Loops: @foreach($items as $item)...@endforeach, @forelse($items as $item)...@empty...@endforelse
+   - Auth: @auth...@endauth, @guest...@endguest
+   - Layouts: @extends('layouts.app'), @section('content')...@endsection, @yield('content')
+   - Components: <x-button variant="primary">Label</x-button>
+
+4. ACTIVE RECORD MODELS & RELATIONS:
+   - Properties: protected array $fillable = [...]; protected array $casts = [...]; protected array $hidden = [...];
+   - CRUD: Model::create([...]), Model::find($id), Model::where('col', '=', $val)->get(), Model::paginate(15)
+   - Relations: $this->hasMany(Child::class, 'foreign_id'), $this->belongsTo(Parent::class, 'foreign_id'), $this->belongsToMany(Role::class, 'pivot_table', 'user_id', 'role_id')
+
+5. CORE SUBSYSTEMS:
+   - Auth: auth()->check(), auth()->user(), auth()->id(), auth()->login($user), auth()->logout()
+   - Validation: $request->validated(['field' => 'required|min:3']) or FormRequest classes
+   - Events: EventName::dispatch($payload); Listeners implement handle(Event $event)
+   - Queues: JobName::dispatch($args)->delay(60); Worker: php veldora queue:work
+   - Mail: mailer($to)->send(new MailableClass($data)); Mailables implement build(): static
+   - Cache: cache(['key' => $val], 600), cache('key'), cache()->remember('key', 600, fn() => ...)
+   - Storage: storage('public')->put($path, $data), storage('public')->url($path)
+   - Logs: log_info('msg', $ctx), log_error('msg', $ctx), logger()->warning('msg')
+   - HTTP Client: Http::get($url), Http::withToken($t)->post($url, $data)
+   - Testing: extend TestCase, $this->get('/')->assertOk()->assertSee('text')
+
+When writing code for Veldora:
+- Always use PHP 8.2+ strict typing (declare(strict_types=1);).
+- Never invent Laravel-specific functions (like Route::, DB::table(), collect()) that do not exist in Veldora.
+- Generate complete, executable, production-ready code.
+```
