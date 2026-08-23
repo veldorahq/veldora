@@ -12,7 +12,7 @@ Built-in zero-config CLI • 41+ Built-in Commands • Blade-like Template Engin
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://php.net)
 [![npm version](https://img.shields.io/npm/v/create-veldora-app?style=flat-square&logo=npm&color=CB3837)](https://www.npmjs.com/package/create-veldora-app)
-[![VS Code Extension](https://img.shields.io/badge/VS_Code-v0.5.1-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)](https://github.com/veldorahq/veldora-vscode)
+[![VS Code Extension](https://img.shields.io/badge/VS_Code-v0.5.4-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)](https://github.com/veldorahq/veldora-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6?style=flat-square)](LICENSE)
 [![Docs](https://img.shields.io/badge/Documentation-veldora.modrao.com-10B981?style=flat-square)](https://veldora.modrao.com)
 
@@ -110,4 +110,4 @@ Use them seamlessly in any template:
 
 - **Author**: Shahriyar Fahim
 - **License**: [MIT](LICENSE)
-- **Website**: [https://veldora.modrao.com](https://veldora.modrao.com)
+- **Website**: [https://veldora.modrao.com](https://veldora.modrao.com) *(temporary — permanent domain coming soon)*
