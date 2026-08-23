@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/veldorahq/veldora-vscode/main/images/v-icon.png" width="80" height="80" alt="Veldora Logo">
+<img src="https://raw.githubusercontent.com/veldorahq/veldora/main/assets/v-icon.png" width="80" height="80" alt="Veldora Logo">
 
 # Veldora
 
