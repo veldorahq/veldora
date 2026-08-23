@@ -31,6 +31,17 @@
 | 17 | [CLI Console & Make Commands](#17-cli-console--make-commands) | 3 |
 | 18 | [VS Code Extension](#18-vs-code-extension) | All |
 | 19 | [UI Component System & Veldora UI](#19-ui-component-system-veldora-ui) | 3.1 |
+| 20 | [Event Dispatcher & Listeners](#20-event-dispatcher--listeners) | 4 |
+| 21 | [Background Queue System & Workers](#21-background-queue-system--workers) | 4 |
+| 22 | [Mail System & SMTP Transport](#22-mail-system--smtp-transport) | 4 |
+| 23 | [Advanced ORM, Relations & Pagination](#23-advanced-orm-relations--pagination) | 4 |
+| 24 | [Cache System](#24-cache-system) | 4 |
+| 25 | [File Storage & Disks](#25-file-storage--disks) | 4 |
+| 26 | [PSR-3 Logging System](#26-psr-3-logging-system) | 4 |
+| 27 | [HTTP Client & Testing Fakes](#27-http-client--testing-fakes) | 4 |
+| 28 | [API JSON Resources](#28-api-json-resources) | 4 |
+| 29 | [Form Request Validation](#29-form-request-validation) | 4 |
+| 30 | [Testing Infrastructure & Model Factories](#30-testing-infrastructure--model-factories) | 4 |
 
 ---
 
@@ -1099,8 +1110,382 @@ All component designs utilize CSS custom variables and styling. Copy `veldora-ui
 
 ---
 
-> **Last Updated:** Phase 4 — UI Component System (`veldora add`) — 21 UI Components
-> **Test Status:** ✅ 40 tests, 103 assertions — all passing
-> **Extension Version:** `veldora-vscode 0.4.0`
-> **Next:** Phase 5 — Documentation Website & Monorepo Packaging
+## 20. Event Dispatcher & Listeners
+
+Veldora provides an event dispatcher implementation allowing you to subscribe and listen to various events that occur in your application.
+
+### Defining Events
+
+```php
+namespace App\Events;
+
+use App\Models\User;
+use Veldora\Framework\Events\Event;
+
+class UserRegistered extends Event
+{
+    public function __construct(public User $user)
+    {
+    }
+}
+```
+
+Dispatch an event using the static `dispatch()` method or the `event()` global helper:
+
+```php
+UserRegistered::dispatch($user);
+// or
+event(new UserRegistered($user));
+```
+
+### Defining Listeners
+
+```php
+namespace App\Listeners;
+
+use App\Events\UserRegistered;
+use Veldora\Framework\Events\Event;
+use Veldora\Framework\Events\Listener;
+
+class SendWelcomeNotification implements Listener
+{
+    public function handle(Event $event): void
+    {
+        if ($event instanceof UserRegistered) {
+            mailer($event->user->email)->send(new WelcomeEmail($event->user));
+        }
+    }
+}
+```
+
+---
+
+## 21. Background Queue System & Workers
+
+Veldora's queue system provides a unified API across diverse queue backends, allowing you to defer the processing of time-consuming tasks.
+
+### Generating Queue Jobs
+
+```bash
+php veldora make:job ProcessPodcast
+```
+
+```php
+namespace App\Jobs;
+
+use Veldora\Framework\Queue\Job;
+
+class ProcessPodcast extends Job
+{
+    public int $maxTries = 3;
+    public int $retryAfter = 60;
+
+    public function __construct(public int $podcastId)
+    {
+    }
+
+    public function handle(): void
+    {
+        // Process podcast audio encoding...
+    }
+}
+```
+
+### Dispatching Jobs
+
+```php
+ProcessPodcast::dispatch(42)->onQueue('high')->delay(120);
+// or
+dispatch(new ProcessPodcast(42));
+```
+
+### Running the Queue Worker
+
+```bash
+php veldora queue:work --queue=default --sleep=3
+```
+
+---
+
+## 22. Mail System & SMTP Transport
+
+Send rich HTML and plain text emails using SMTP, PHP `mail()`, or in-memory array transport.
+
+### Generating Mailables
+
+```bash
+php veldora make:mail WelcomeEmail
+```
+
+```php
+namespace App\Mail;
+
+use Veldora\Framework\Mail\Mailable;
+
+class WelcomeEmail extends Mailable
+{
+    public function build(): static
+    {
+        return $this->subject('Welcome to Veldora!')
+            ->view('emails.welcome', ['name' => 'Fahim']);
+    }
+}
+```
+
+### Sending and Queueing Emails
+
+```php
+// Synchronous send
+mailer('user@example.com')->send(new WelcomeEmail());
+
+// Background queue send (Mailable extends Job automatically!)
+mailer('user@example.com')->queue(new WelcomeEmail());
+```
+
+---
+
+## 23. Advanced ORM, Relations & Pagination
+
+### BelongsToMany & Pivot Tables
+
+```php
+class User extends Model
+{
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
+    }
+}
+
+// Attach, Detach, Sync, and Toggle
+$user->roles()->attach([1, 2]);
+$user->roles()->detach(1);
+$user->roles()->sync([1, 3]);
+$user->roles()->toggle([2, 4]);
+```
+
+### Model Pagination
+
+```php
+// Paginate 15 users per page with accessible HTML link rendering
+$users = User::paginate(15);
+
+// In your .veldora.php view:
+{!! $users->links() !!}
+```
+
+### Model Casts & Hidden Attributes
+
+```php
+class User extends Model
+{
+    protected array $fillable = ['name', 'email', 'is_active', 'preferences'];
+    
+    protected array $casts = [
+        'is_active' => 'bool',
+        'preferences' => 'array',
+        'created_at' => 'datetime',
+    ];
+    
+    protected array $hidden = ['password'];
+}
+```
+
+---
+
+## 24. Cache System
+
+Veldora includes a high-performance Cache manager with atomic file locking and in-memory array drivers.
+
+```php
+// Store value with TTL (seconds)
+cache(['theme' => 'dark'], 3600);
+
+// Retrieve or compute
+$stats = cache()->remember('dashboard_stats', 600, function () {
+    return DB::table('orders')->count();
+});
+
+// Increment counters
+cache()->increment('views_count');
+```
+
+---
+
+## 25. File Storage & Disks
+
+Manage files across local and public storage disks.
+
+```php
+// Write file
+storage('public')->put('avatars/user_1.png', $fileContent);
+
+// Get public URL
+$url = storage('public')->url('avatars/user_1.png');
+
+// Check existence & delete
+if (storage('public')->exists('avatars/user_1.png')) {
+    storage('public')->delete('avatars/user_1.png');
+}
+```
+
+---
+
+## 26. PSR-3 Logging System
+
+Veldora includes structured, rotating daily log files with JSON context serialization and exception tracing.
+
+```php
+log_info('User profile updated', ['user_id' => 12]);
+log_error('Payment gateway timeout', ['exception' => $e]);
+logger('Debugging SQL query');
+```
+
+---
+
+## 27. HTTP Client & Testing Fakes
+
+A fluent, cURL-powered HTTP Client with mock support.
+
+```php
+use Veldora\Framework\Http\Client\Http;
+
+$response = Http::withToken('token123')
+    ->acceptJson()
+    ->get('https://api.github.com/user');
+
+if ($response->successful()) {
+    $username = $response->json('login');
+}
+```
+
+### Faking in Unit Tests
+
+```php
+Http::fake([
+    'https://api.github.com/*' => Http::response(['login' => 'octocat'], 200),
+]);
+```
+
+---
+
+## 28. API JSON Resources
+
+Transform your ActiveRecord models into consistent, clean JSON responses.
+
+```bash
+php veldora make:resource UserResource
+```
+
+```php
+namespace App\Http\Resources;
+
+use Veldora\Framework\Http\Resources\JsonResource;
+
+class UserResource extends JsonResource
+{
+    public function toArray($request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+}
+
+// Controller usage
+return (new UserResource($user))->toResponse();
+return UserResource::collection(User::paginate(10))->toResponse();
+```
+
+---
+
+## 29. Form Request Validation
+
+Encapsulate authorization and request validation logic cleanly.
+
+```bash
+php veldora make:request StorePostRequest
+```
+
+```php
+namespace App\Http\Requests;
+
+use Veldora\Framework\Http\FormRequest;
+
+class StorePostRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return auth()->check();
+    }
+
+    public function rules(): array
+    {
+        return [
+            'title' => 'required|min:5|max:255',
+            'body' => 'required',
+        ];
+    }
+}
+```
+
+---
+
+## 30. Testing Infrastructure & Model Factories
+
+Veldora includes an integrated PHPUnit test suite harness with HTTP simulation and Model Factories.
+
+### Generating Factories
+
+```bash
+php veldora make:factory UserFactory --model=User
+```
+
+```php
+namespace Database\Factories;
+
+use App\Models\User;
+use Veldora\Framework\Database\Factories\Factory;
+
+class UserFactory extends Factory
+{
+    protected string $model = User::class;
+
+    public function definition(): array
+    {
+        return [
+            'name' => 'John Doe',
+            'email' => 'user' . rand(100, 999) . '@example.com',
+            'is_active' => 1,
+        ];
+    }
+}
+```
+
+### Writing Feature Tests
+
+```php
+use Veldora\Framework\Testing\TestCase;
+
+class UserFeatureTest extends TestCase
+{
+    public function test_user_api_endpoint(): void
+    {
+        $response = $this->get('/api/users');
+
+        $response->assertOk()
+            ->assertJsonFragment(['name' => 'John Doe'])
+            ->assertSee('John');
+    }
+}
+```
+
+---
+
+> **Framework Version:** `v1.0.0-rc`
+> **Test Status:** ✅ 87 unit tests, 344 assertions — 100% passing
+> **Extension Version:** `veldora-vscode 0.5.5`
 
