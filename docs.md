@@ -575,9 +575,18 @@ $paginator = Post::where('is_published', '=', 1)->paginate(15);
 
 ## 7. Model Relationships
 
-Define relations on your models to traverse database connections seamlessly.
+Veldora's ActiveRecord ORM supports intuitive relationships between database tables. Relations allow you to define connections directly inside model classes and traverse them cleanly without writing complex `JOIN` queries.
 
-### Relationship Types
+### Supported Relationship Types
+
+| Relationship | Method | Example Use Case |
+|---|---|---|
+| **One-to-One** | `$this->hasOne(Profile::class)` | A User has one Profile |
+| **One-to-Many** | `$this->hasMany(Post::class)` | An Author has many Posts |
+| **Inverse One-to-Many** | `$this->belongsTo(User::class)` | A Post belongs to an Author |
+| **Many-to-Many** | `$this->belongsToMany(Role::class, 'role_user')` | A User has many Roles via a pivot table |
+
+### Defining Relationships
 
 ```php
 namespace App\Models;
@@ -585,10 +594,17 @@ namespace App\Models;
 use Veldora\Framework\Database\Model;
 use Veldora\Framework\Database\Relations\BelongsTo;
 use Veldora\Framework\Database\Relations\HasMany;
+use Veldora\Framework\Database\Relations\HasOne;
 use Veldora\Framework\Database\Relations\BelongsToMany;
 
 class User extends Model
 {
+    // One-to-One
+    public function profile(): HasOne
+    {
+        return $this->hasOne(Profile::class, 'user_id');
+    }
+
     // One-to-Many
     public function posts(): HasMany
     {
@@ -604,92 +620,208 @@ class User extends Model
 
 class Post extends Model
 {
-    // Inverse One-to-Many
+    // Inverse relationship back to User
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    // One-to-Many for Comments
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'post_id');
+    }
 }
 ```
 
-### Using Relationships
+### Querying and Using Relations
+
+Access related models as dynamic properties:
 
 ```php
 $user = User::find(1);
 
-// Access related models
+// Lazy load related posts (returns array/collection of Post models)
 $posts = $user->posts;
 
-// Access relation on post
-$post = Post::find(1);
+// Access inverse relation
+$post = Post::find(10);
 $authorName = $post->author->name;
 
-// Manage Many-to-Many pivot attachments
+// Filter through a relationship query
+$publishedPosts = $user->posts()->where('is_published', '=', 1)->get();
+```
+
+### Managing Many-to-Many Pivot Tables
+
+```php
+$user = User::find(1);
+
+// Attach a role ID
 $user->roles()->attach(2);
+
+// Detach a role ID
 $user->roles()->detach(1);
-$user->roles()->sync([2, 3]);
+
+// Sync: ensures only the given IDs are attached (removes all others)
+$user->roles()->sync([2, 3, 5]);
+
+// Check if user has a role
+$hasAdminRole = $user->roles()->where('slug', '=', 'admin')->exists();
 ```
 
 ---
 
 ## 8. Authentication System
 
-Veldora includes complete authentication scaffolding out of the box.
+Veldora includes a robust, secure authentication system out of the box with session management, password hashing (Argon2id/Bcrypt), remember tokens, and route protection middleware.
 
 ### Generating Full Auth Scaffold
+
+Generate complete, production-ready login, registration, and dashboard controllers and views with a single command:
 
 ```bash
 php veldora make:auth
 php veldora migrate
 ```
 
-This generates:
-- `app/Controllers/AuthController.php`
-- `app/Models/User.php`
-- `database/migrations/2026_07_15_000000_create_users_table.php`
-- `resources/views/auth/login.veldora.php`
-- `resources/views/auth/register.veldora.php`
-- `resources/views/dashboard.veldora.php`
-- Auth routes in `routes/web.php`
+This creates:
+- `app/Controllers/AuthController.php` — Handles login, registration, logout, and password resets
+- `app/Models/User.php` — Authenticatable model with password hashing and fillable attributes
+- `database/migrations/*_create_users_table.php` — Database schema with `email`, `password`, `remember_token`
+- `resources/views/auth/login.veldora.php` — Accessible login form with CSRF token
+- `resources/views/auth/register.veldora.php` — Registration form with client and server validation
+- `resources/views/dashboard.veldora.php` — Protected user dashboard
+- Automatic authentication routes registered in `routes/web.php`
 
-### Auth Helpers & Methods
+### Global Authentication Helpers
 
 ```php
-// Check if user is logged in
+// Check if the current visitor is logged in
 if (auth()->check()) {
-    $user = auth()->user();
-    $userId = auth()->id();
+    $user = auth()->user(); // Returns current User model instance
+    $userId = auth()->id();  // Returns current user ID
 }
 
-// Log a user in manually
+// Log in a specific user model
 auth()->login($user, $remember = true);
 
-// Log out current user
+// Log out and invalidate the session
 auth()->logout();
+```
+
+### Protecting Routes with Middleware
+
+Protect routes so only authenticated users or guests can access them:
+
+```php
+// Only logged-in users can access
+$router->group(['middleware' => ['auth']], function ($r) {
+    $r->get('/dashboard', [DashboardController::class, 'index']);
+    $r->get('/settings',  [SettingsController::class, 'index']);
+});
+
+// Only guests (unauthenticated visitors) can access login/register
+$router->group(['middleware' => ['guest']], function ($r) {
+    $r->get('/login',    [AuthController::class, 'showLogin']);
+    $r->post('/login',   [AuthController::class, 'login']);
+    $r->get('/register', [AuthController::class, 'showRegister']);
+    $r->post('/register',[AuthController::class, 'register']);
+});
+```
+
+### Password Hashing
+
+Passwords are automatically hashed securely using PHP's native `password_hash()` with modern Argon2id or Bcrypt:
+
+```php
+use Veldora\Framework\Support\Hash;
+
+// Hash a plaintext password
+$hashed = Hash::make($request->input('password'));
+
+// Verify password against hash
+if (Hash::check($request->input('password'), $user->password)) {
+    // Password matches!
+}
 ```
 
 ---
 
 ## 9. Validation & Form Requests
 
+Veldora provides an expressive, rule-based validation engine. You can perform inline validation directly inside controller actions or encapsulate validation logic inside reusable Form Request classes.
+
 ### Inline Validation in Controllers
+
+The `$request->validated()` method validates incoming request data against a set of rules. If validation fails, it automatically redirects back with input errors and old form values:
 
 ```php
 public function store(Request $request): Response
 {
     $data = $request->validated([
-        'title' => 'required|min:5|max:255',
-        'email' => 'required|email|unique:users,email',
-        'age'   => 'nullable|integer|min:18',
+        'title'    => 'required|min:3|max:255',
+        'email'    => 'required|email|unique:users,email',
+        'password' => 'required|min:8|confirmed',
+        'age'      => 'nullable|integer|min:18',
+        'status'   => 'required|in:draft,published,archived',
     ]);
 
-    User::create($data);
+    // If execution reaches here, data is 100% valid
+    $user = User::create($data);
 
-    return Response::redirect('/users');
+    return Response::redirect('/users')
+        ->with('success', 'User created successfully!');
 }
 ```
 
-### Custom FormRequest Classes
+### Available Validation Rules
+
+| Rule | Description | Example |
+|---|---|---|
+| `required` | Field must be present and not empty | `'name' => 'required'` |
+| `nullable` | Field may be null or empty | `'phone' => 'nullable\|numeric'` |
+| `email` | Must be a valid email address format | `'email' => 'required\|email'` |
+| `min:value` | Minimum string length or numeric value | `'password' => 'min:8'` |
+| `max:value` | Maximum string length or numeric value | `'title' => 'max:255'` |
+| `numeric` | Must be a numeric value | `'price' => 'required\|numeric'` |
+| `integer` | Must be an integer | `'age' => 'required\|integer\|min:1'` |
+| `in:foo,bar` | Must match one of the allowed values | `'role' => 'in:admin,editor,user'` |
+| `confirmed` | Field must match `{field}_confirmation` | `'password' => 'confirmed'` |
+| `unique:table,col` | Must be unique in the specified database table | `'email' => 'unique:users,email'` |
+| `url` | Must be a valid URL | `'website' => 'nullable\|url'` |
+
+### Displaying Validation Errors in Views
+
+In your `.veldora.php` templates, display validation feedback easily:
+
+```html
+<form method="POST" action="/users">
+    @csrf
+
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{ old('name') }}" class="input">
+        @error('name')
+            <span class="text-danger">{{ $message }}</span>
+        @enderror
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ old('email') }}" class="input">
+        @error('email')
+            <span class="text-danger">{{ $message }}</span>
+        @enderror
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create User</button>
+</form>
+```
+
+### Dedicated Form Request Classes
+
+For complex forms, keep controllers clean by creating a dedicated Form Request:
 
 ```bash
 php veldora make:request StoreUserRequest
@@ -702,15 +834,17 @@ use Veldora\Framework\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
 {
+    // Authorization logic: return false to abort with 403 Forbidden
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && auth()->user()->is_admin;
     }
 
+    // Validation rules
     public function rules(): array
     {
         return [
-            'name'     => 'required|min:2',
+            'name'     => 'required|min:2|max:100',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
         ];
@@ -751,117 +885,203 @@ The `php veldora` CLI binary provides generators and maintenance utilities.
 
 ## 11. Events & Listeners
 
-Decouple application logic using events and listeners.
+Events provide a simple observer pattern implementation, allowing you to subscribe and listen for various events that occur in your application. This cleanly decouples business operations (such as sending a welcome email after registration) from your HTTP controllers.
 
 ### Generating Events & Listeners
 
 ```bash
-php veldora make:event UserRegistered
-php veldora make:listener SendWelcomeNotification
+php veldora make:event OrderPlaced
+php veldora make:listener SendOrderConfirmation
 ```
 
+### Defining the Event
+
+Events are lightweight data containers holding the information related to the event:
+
 ```php
-// app/Events/UserRegistered.php
+// app/Events/OrderPlaced.php
 namespace App\Events;
 
-use App\Models\User;
+use App\Models\Order;
 use Veldora\Framework\Events\Event;
 
-class UserRegistered extends Event
+class OrderPlaced extends Event
 {
-    public function __construct(public readonly User $user) {}
+    public function __construct(
+        public readonly Order $order
+    ) {}
 }
+```
 
-// app/Listeners/SendWelcomeNotification.php
+### Defining the Listener
+
+Listeners handle the logic when an event is fired:
+
+```php
+// app/Listeners/SendOrderConfirmation.php
 namespace App\Listeners;
 
 use Veldora\Framework\Events\Event;
 use Veldora\Framework\Events\Listener;
-use App\Mail\WelcomeEmail;
+use App\Mail\OrderInvoiceEmail;
 
-class SendWelcomeNotification implements Listener
+class SendOrderConfirmation implements Listener
 {
     public function handle(Event $event): void
     {
-        mailer($event->user->email)->send(new WelcomeEmail($event->user));
+        // Access event payload directly
+        $order = $event->order;
+
+        // Send email via mailer
+        mailer($order->customer_email)->send(new OrderInvoiceEmail($order));
+
+        log_info('Order invoice sent', ['order_id' => $order->id]);
     }
 }
 ```
 
-### Dispatching Events
+### Registering Events and Listeners
+
+Register your event-listener mappings in `config/events.php`:
 
 ```php
-use App\Events\UserRegistered;
+return [
+    'listen' => [
+        \App\Events\OrderPlaced::class => [
+            \App\Listeners\SendOrderConfirmation::class,
+            \App\Listeners\UpdateInventoryStock::class,
+        ],
+        \App\Events\UserRegistered::class => [
+            \App\Listeners\SendWelcomeNotification::class,
+        ],
+    ],
+];
+```
 
-// Dispatch with class method or helper
-UserRegistered::dispatch($user);
-// or
-event(new UserRegistered($user));
+### Dispatching Events
+
+Dispatch events anywhere in your application:
+
+```php
+use App\Events\OrderPlaced;
+
+// Option 1: Static dispatch method
+OrderPlaced::dispatch($order);
+
+// Option 2: Global event() helper
+event(new OrderPlaced($order));
 ```
 
 ---
 
 ## 12. Background Queues & Jobs
 
-Run time-consuming operations asynchronously in worker processes.
+Queues allow you to defer time-consuming tasks (like sending emails, processing images, or calling third-party webhooks) to a background process, dramatically speeding up web request response times.
+
+### Queue Drivers
+
+Configure the queue driver in `.env`:
+
+```ini
+QUEUE_DRIVER=database   # Options: sync, database
+```
+
+| Driver | Description | Best For |
+|---|---|---|
+| `sync` | Runs jobs immediately in the same process | Local debugging & testing |
+| `database` | Stores jobs in the `jobs` database table and processes asynchronously | Production apps |
 
 ### Creating a Job
 
 ```bash
-php veldora make:job ProcessVideo
+php veldora make:job ProcessVideoEncoding
 ```
 
 ```php
+// app/Jobs/ProcessVideoEncoding.php
 namespace App\Jobs;
 
 use Veldora\Framework\Queue\Job;
 
-class ProcessVideo extends Job
+class ProcessVideoEncoding extends Job
 {
-    public int $maxTries = 3;
-    public int $retryAfter = 60;
+    public int $maxTries = 3;     // Maximum attempts before failing
+    public int $retryAfter = 60;  // Delay in seconds between retries
 
-    public function __construct(public readonly int $videoId) {}
+    public function __construct(
+        public readonly int $videoId,
+        public readonly string $format = 'mp4'
+    ) {}
 
     public function handle(): void
     {
-        // Process video in background worker
+        // Heavy processing logic runs in background worker
+        log_info("Encoding video {$this->videoId} to {$this->format}");
+
+        // Perform encoding...
     }
 }
 ```
 
-### Dispatching Jobs & Running Worker
+### Dispatching Jobs
 
 ```php
-// Dispatch immediately to queue
-ProcessVideo::dispatch($video->id);
+use App\Jobs\ProcessVideoEncoding;
 
-// Dispatch with delay
-ProcessVideo::dispatch($video->id)->delay(120);
+// Dispatch immediately to default queue
+ProcessVideoEncoding::dispatch($video->id);
 
-// Dispatch to specific queue channel
-ProcessVideo::dispatch($video->id)->onQueue('media');
+// Dispatch with a delay (runs after 2 minutes)
+ProcessVideoEncoding::dispatch($video->id)->delay(120);
+
+// Dispatch to a specific queue channel
+ProcessVideoEncoding::dispatch($video->id)->onQueue('media');
 ```
 
-Start the queue worker:
+### Running the Queue Worker
+
+Run the background worker via the CLI:
 
 ```bash
-php veldora queue:work --queue=default --sleep=3
+# Process jobs continuously on default queue
+php veldora queue:work
+
+# Specify queue channel and sleep interval
+php veldora queue:work --queue=media,default --sleep=3 --tries=3
 ```
 
 ---
 
 ## 13. Mail & SMTP Transport
 
-Send beautifully formatted emails using Mailable classes.
+Veldora includes a clean, expressive Mailable system for sending HTML and plain-text emails via SMTP, Mailgun, or local log file transport.
+
+### Configuration
+
+Configure your mail settings in `.env`:
+
+```ini
+MAIL_DRIVER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_username
+MAIL_PASSWORD=your_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="Veldora App"
+```
 
 ### Creating a Mailable
 
 ```bash
 php veldora make:mail WelcomeEmail
+php veldora make:mail OrderReceiptEmail
 ```
 
+### Defining a Mailable
+
 ```php
+// app/Mail/WelcomeEmail.php
 namespace App\Mail;
 
 use App\Models\User;
@@ -869,25 +1089,62 @@ use Veldora\Framework\Mail\Mailable;
 
 class WelcomeEmail extends Mailable
 {
-    public function __construct(public readonly User $user) {}
+    public function __construct(
+        public readonly User $user
+    ) {}
 
     public function build(): static
     {
         return $this
-            ->subject('Welcome to Veldora!')
-            ->view('emails.welcome', ['user' => $this->user]);
+            ->subject('Welcome to ' . config('app.name') . '!')
+            ->from('hello@example.com', 'Veldora Team')
+            ->view('emails.welcome', [
+                'user'      => $this->user,
+                'loginUrl'  => url('/login'),
+            ]);
     }
 }
 ```
 
-### Sending and Queueing Emails
+### Designing the Email View Template
+
+Create the template at `resources/views/emails/welcome.veldora.php`:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Welcome</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <h2>Hello, &#123;&#123; $user->name &#125;&#125;!</h2>
+    <p>Thank you for joining <strong>&#123;&#123; config('app.name') &#125;&#125;</strong>. We're excited to have you on board.</p>
+    <p>
+        <a href="&#123;&#123; $loginUrl &#125;&#125;" style="background: #8b5cf6; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            Go to Your Dashboard
+        </a>
+    </p>
+</body>
+</html>
+```
+
+### Sending & Queueing Emails
 
 ```php
+use App\Mail\WelcomeEmail;
+
 // Send immediately via SMTP
 mailer($user->email)->send(new WelcomeEmail($user));
 
-// Queue email for background delivery
+// Queue for background delivery (requires queue:work running)
 mailer($user->email)->queue(new WelcomeEmail($user));
+
+// Send with CC and BCC
+mailer($user->email)
+    ->cc('admin@example.com')
+    ->bcc('audit@example.com')
+    ->send(new WelcomeEmail($user));
 ```
 
 ---
