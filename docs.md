@@ -894,107 +894,512 @@ mailer($user->email)->queue(new WelcomeEmail($user));
 
 ## 14. Cache System
 
-Cache expensive queries or API responses using the file or memory cache drivers.
+The cache system lets you store the result of expensive database queries, computed data, or external API responses so they don't need to be recalculated on every request. Veldora supports two drivers: **file** (default, persists to disk) and **array** (in-memory, resets per request — useful for testing).
+
+### Configuration
+
+Set the driver in your `.env` file:
+
+```ini
+CACHE_DRIVER=file   # Options: file, array
+```
+
+Or change it per-environment in `config/cache.php`.
+
+### Cache Drivers
+
+| Driver | Description | When to use |
+|---|---|---|
+| `file` | Stores cached items in `storage/framework/cache/` | Default for most apps; persistent across requests |
+| `array` | Stores in PHP memory only; lost after each request | Automated tests, local debugging |
+
+### Storing & Reading Values
 
 ```php
-// Store for 10 minutes (600 seconds)
+// Store a value for 10 minutes (600 seconds)
 cache(['top_posts' => $posts], 600);
 
-// Retrieve cached item
+// Retrieve a cached value (returns null if missing or expired)
 $posts = cache('top_posts');
+```
 
-// Remember pattern: fetch or compute
+### The `remember()` Pattern (Recommended)
+
+The `remember()` helper is the cleanest way to use the cache. It checks if a value is cached — if yes, it returns it; if not, it runs your closure, stores the result, and returns it:
+
+```php
+// Fetch from cache, or run the closure and cache for 1 hour
 $stats = cache()->remember('dashboard_stats', 3600, function () {
     return [
-        'users' => User::count(),
-        'posts' => Post::count(),
+        'total_users' => User::count(),
+        'total_posts' => Post::count(),
+        'new_today'   => User::where('created_at', '>=', date('Y-m-d'))->count(),
     ];
 });
+```
 
-// Remove from cache
-cache()->forget('top_posts');
+This is the preferred pattern for controller actions that serve expensive aggregated data.
 
-// Atomic counter increments
-cache()->increment('page_views_123');
+### All Cache Methods
+
+```php
+// Store (TTL in seconds)
+cache(['key' => $value], 3600);
+cache()->put('key', $value, 600);
+
+// Retrieve
+$value = cache('key');            // Returns null if missing
+$value = cache('key', 'default'); // Returns default if missing
+
+// Remember (fetch or compute)
+$value = cache()->remember('key', 3600, fn() => expensiveQuery());
+
+// Check existence
+if (cache()->has('key')) { ... }
+
+// Remove single item
+cache()->forget('key');
+
+// Clear entire cache store
+cache()->flush();
+
+// Atomic counter increment / decrement (great for rate limiting, view counts)
+cache()->increment('page_views:post-42');
+cache()->increment('page_views:post-42', 5); // Increment by 5
+cache()->decrement('credits_remaining');
+
+// Store forever (no expiry)
+cache()->forever('site_settings', $settings);
+```
+
+### Practical Example — Caching Posts in a Controller
+
+```php
+public function index(Request $request): Response
+{
+    $page = (int) $request->query('page', 1);
+
+    $posts = cache()->remember("posts:page:{$page}", 300, function () use ($page) {
+        return Post::where('is_published', '=', 1)
+                   ->orderBy('created_at', 'DESC')
+                   ->paginate(15, $page);
+    });
+
+    return view('posts.index', ['posts' => $posts]);
+}
 ```
 
 ---
 
 ## 15. File Storage & Disks
 
-Manage local and public files with the filesystem abstraction.
+Veldora provides a unified filesystem API for managing files across multiple storage **disks**. By default, two disks are pre-configured: `local` (private, server-only) and `public` (web-accessible via a URL).
+
+### Configuration
+
+Disks are defined in `config/filesystems.php`:
 
 ```php
-// Store user avatar on public disk
-storage('public')->put('avatars/user-1.png', $binaryData);
+return [
+    'default' => env('FILESYSTEM_DISK', 'local'),
 
-// Read file contents
+    'disks' => [
+        'local' => [
+            'driver' => 'local',
+            'root'   => storage_path('app'),       // storage/app/
+        ],
+        'public' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/public'), // storage/app/public/
+            'url'    => '/storage',                 // Web URL prefix
+        ],
+    ],
+];
+```
+
+### When to Use Each Disk
+
+| Disk | Path | Web Accessible | Use For |
+|---|---|---|---|
+| `local` | `storage/app/` | ❌ No | Private files: invoices, exports, backups |
+| `public` | `storage/app/public/` | ✅ Yes (via `/storage/`) | User-uploaded avatars, images, documents |
+
+### Storing Files
+
+```php
+// Store raw binary content
+storage('public')->put('avatars/user-42.png', $binaryContent);
+
+// Store an uploaded file from a request
+$file = $request->file('avatar'); // Returns a PHP SplFileInfo instance
+$path = 'avatars/' . uniqid() . '.jpg';
+storage('public')->put($path, file_get_contents($file->getPathname()));
+```
+
+### Reading Files
+
+```php
+// Read raw file contents
 $content = storage('local')->get('exports/report.csv');
 
-// Check existence
-if (storage('public')->exists('avatars/user-1.png')) {
-    // Generate public web URL: /storage/avatars/user-1.png
-    $url = storage('public')->url('avatars/user-1.png');
-}
+// Get file size in bytes
+$size = storage('local')->size('exports/report.csv');
 
-// Delete file
+// Check if file exists
+if (storage('public')->exists('avatars/user-42.png')) {
+    echo 'File found!';
+}
+```
+
+### Generating Public URLs
+
+For files on the `public` disk, generate a browser-accessible URL:
+
+```php
+// Returns: /storage/avatars/user-42.png
+$url = storage('public')->url('avatars/user-42.png');
+
+// Use in a view:
+// <img src="{{ $url }}" alt="Avatar">
+```
+
+### Deleting Files
+
+```php
+// Delete a single file
 storage('public')->delete('avatars/old-avatar.png');
+
+// Delete multiple files
+storage('public')->delete(['thumbs/img1.jpg', 'thumbs/img2.jpg']);
+```
+
+### Listing Files in a Directory
+
+```php
+// List all files in a directory
+$files = storage('public')->files('avatars');
+
+// List all directories
+$dirs = storage('local')->directories('exports');
+```
+
+### Practical Example — File Upload Controller
+
+```php
+public function uploadAvatar(Request $request): Response
+{
+    $validated = $request->validated([
+        'avatar' => 'required',
+    ]);
+
+    $user = auth()->user();
+    $file = $request->file('avatar');
+
+    // Delete old avatar if it exists
+    if ($user->avatar_path && storage('public')->exists($user->avatar_path)) {
+        storage('public')->delete($user->avatar_path);
+    }
+
+    // Store new avatar
+    $path = 'avatars/user-' . $user->id . '-' . uniqid() . '.jpg';
+    storage('public')->put($path, file_get_contents($file->getPathname()));
+
+    // Save path to user record
+    $user->avatar_path = $path;
+    $user->save();
+
+    return Response::redirect('/profile')
+        ->with('success', 'Avatar updated successfully!');
+}
 ```
 
 ---
 
 ## 16. PSR-3 Logging
 
-Write structured logs to daily rotating files in `storage/logs/app.log`.
+Veldora includes a PSR-3 compliant logger that writes structured log entries to daily rotating log files in `storage/logs/`. Each log entry includes a timestamp, severity level, message, and optional context array.
+
+### Log File Location
+
+Log files are stored at `storage/logs/app.log` and automatically rotate daily (e.g., `app-2026-08-23.log`) based on your `config/logging.php` settings.
+
+### Log Levels
+
+Veldora supports all 8 standard PSR-3 log levels, from lowest to highest severity:
+
+| Level | Helper | Use For |
+|---|---|---|
+| `debug` | `log_debug()` | Detailed development/diagnostic info |
+| `info` | `log_info()` | Normal application events (user login, payment processed) |
+| `notice` | `logger()->notice()` | Normal but significant conditions |
+| `warning` | `logger()->warning()` | Non-critical issues that should be investigated |
+| `error` | `log_error()` | Runtime errors that don't require immediate action |
+| `critical` | `logger()->critical()` | Critical conditions (component unavailable) |
+| `alert` | `logger()->alert()` | Action must be taken immediately |
+| `emergency` | `logger()->emergency()` | System is unusable |
+
+### Using Global Helpers
 
 ```php
-log_info('User signed in', ['user_id' => $user->id, 'ip' => $request->ip()]);
-log_error('Payment gateway failure', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+// Informational events (user actions, successful operations)
+log_info('User signed in', [
+    'user_id' => $user->id,
+    'ip'      => $request->ip(),
+    'agent'   => $request->userAgent(),
+]);
 
-logger()->warning('Rate limit approaching threshold', ['attempts' => 95]);
-logger()->critical('Database connection lost!');
+// Debug info during development
+log_debug('Slow query detected', [
+    'query'   => $sql,
+    'elapsed' => '1250ms',
+]);
+
+// Errors that need investigation
+log_error('Payment gateway failure', [
+    'order_id' => $order->id,
+    'gateway'  => 'stripe',
+    'error'    => $e->getMessage(),
+    'trace'    => $e->getTraceAsString(),
+]);
+```
+
+### Using the Logger Instance
+
+```php
+$logger = logger();
+
+$logger->warning('Rate limit approaching threshold', ['attempts' => 95, 'limit' => 100]);
+$logger->critical('Database connection lost!', ['host' => config('database.host')]);
+$logger->alert('Disk space below 5%', ['free_bytes' => disk_free_space('/'), 'path' => '/']);
+```
+
+### Logging in Exception Handlers
+
+A common pattern is to log errors inside try/catch blocks:
+
+```php
+public function processPayment(Request $request): Response
+{
+    try {
+        $charge = $this->paymentService->charge(
+            $request->input('amount'),
+            $request->input('card_token')
+        );
+
+        log_info('Payment successful', [
+            'user_id'    => auth()->id(),
+            'amount'     => $charge->amount,
+            'charge_id'  => $charge->id,
+        ]);
+
+        return Response::redirect('/dashboard')
+            ->with('success', 'Payment complete!');
+
+    } catch (\Exception $e) {
+        log_error('Payment failed', [
+            'user_id' => auth()->id(),
+            'error'   => $e->getMessage(),
+        ]);
+
+        return Response::redirect('/checkout')
+            ->with('error', 'Payment could not be processed. Please try again.');
+    }
+}
+```
+
+### Log Configuration
+
+Adjust the log channel and retention in `config/logging.php`:
+
+```php
+return [
+    'default' => env('LOG_CHANNEL', 'daily'),
+
+    'channels' => [
+        'daily' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/app.log'),
+            'days'   => 14,    // Keep logs for 14 days
+            'level'  => env('LOG_LEVEL', 'debug'),
+        ],
+        'single' => [
+            'driver' => 'single',
+            'path'   => storage_path('logs/app.log'),
+            'level'  => 'debug',
+        ],
+    ],
+];
 ```
 
 ---
 
 ## 17. HTTP Client
 
-Make outbound HTTP requests to third-party APIs.
+The Veldora HTTP Client provides a clean, fluent interface for making outbound HTTP requests to external APIs and services. It is built on top of PHP's native cURL and streams, with support for JSON, authentication, retries, and fake responses in tests.
+
+### Basic Requests
 
 ```php
 use Veldora\Framework\Http\Client\Http;
 
-// GET Request
+// Simple GET request
 $response = Http::get('https://api.github.com/users/veldorahq');
 
-// POST Request with Bearer Token
-$response = Http::withToken('api_key_123')
-    ->acceptJson()
-    ->post('https://api.example.com/orders', [
-        'item'     => 'Widget',
-        'quantity' => 2,
-    ]);
+// GET with query parameters
+$response = Http::get('https://api.example.com/posts', [
+    'page'     => 1,
+    'per_page' => 20,
+    'status'   => 'published',
+]);
 
+// POST with JSON body (auto sets Content-Type: application/json)
+$response = Http::post('https://api.example.com/users', [
+    'name'  => 'John Doe',
+    'email' => 'john@example.com',
+]);
+
+// PUT and DELETE
+$response = Http::put('https://api.example.com/users/42', ['name' => 'Jane Doe']);
+$response = Http::delete('https://api.example.com/users/42');
+```
+
+### Authentication
+
+```php
+// Bearer token (OAuth 2.0, JWT, API keys)
+$response = Http::withToken('your-api-token-here')
+    ->get('https://api.example.com/protected-resource');
+
+// Basic HTTP authentication
+$response = Http::withBasicAuth('username', 'password')
+    ->get('https://api.example.com/data');
+
+// Custom headers
+$response = Http::withHeaders([
+    'X-API-Key'    => config('services.stripe.key'),
+    'X-Request-ID' => uniqid('req_'),
+])->post('https://api.stripe.com/v1/charges', $payload);
+```
+
+### Working with Responses
+
+```php
+$response = Http::get('https://api.github.com/repos/veldorahq/veldora');
+
+// Check status
+$response->successful();      // true if status 200-299
+$response->failed();          // true if status 400+
+$response->status();          // integer: 200, 404, 500, etc.
+$response->ok();              // true if status 200
+$response->notFound();        // true if status 404
+$response->serverError();     // true if status 500+
+
+// Read body
+$data   = $response->json();           // Decoded PHP array
+$text   = $response->body();           // Raw string
+$header = $response->header('X-RateLimit-Remaining');
+
+// Fluent conditional
 if ($response->successful()) {
-    $data = $response->json();
-    $status = $response->status();
+    $repo = $response->json();
+    log_info('Repo fetched', ['stars' => $repo['stargazers_count']]);
+} else {
+    log_error('GitHub API error', ['status' => $response->status()]);
 }
+```
 
-// Automatic retries on failure
+### Request Options
+
+```php
+// Accept JSON responses (sets Accept: application/json header)
+$response = Http::acceptJson()->get('https://api.example.com/data');
+
+// Send as form (application/x-www-form-urlencoded)
+$response = Http::asForm()->post('https://api.example.com/login', [
+    'username' => 'admin',
+    'password' => 'secret',
+]);
+
+// Set a timeout (in seconds)
+$response = Http::timeout(30)->get('https://slow-api.example.com/data');
+
+// Follow redirects (enabled by default; pass false to disable)
+$response = Http::withoutRedirecting()->get('https://api.example.com');
+```
+
+### Retries & Fault Tolerance
+
+```php
+// Retry up to 3 times, waiting 500ms between attempts
 $response = Http::retry(3, 500)->get('https://unstable-api.com/feed');
+
+// Retry with exponential backoff
+$response = Http::retry(5, 200)->post('https://api.example.com/data', $payload);
+```
+
+### Practical Example — Integrating a Payment Gateway
+
+```php
+namespace App\Services;
+
+use Veldora\Framework\Http\Client\Http;
+
+class StripeService
+{
+    public function createCharge(int $amountCents, string $cardToken): array
+    {
+        $response = Http::withBasicAuth(config('services.stripe.secret'), '')
+            ->asForm()
+            ->post('https://api.stripe.com/v1/charges', [
+                'amount'      => $amountCents,
+                'currency'    => 'usd',
+                'source'      => $cardToken,
+                'description' => 'Veldora order',
+            ]);
+
+        if ($response->failed()) {
+            $error = $response->json()['error']['message'] ?? 'Unknown error';
+            throw new \RuntimeException("Stripe charge failed: {$error}");
+        }
+
+        return $response->json();
+    }
+}
 ```
 
 ---
 
 ## 18. API JSON Resources
 
-Transform models into clean, structured JSON API responses.
+JSON Resources provide a dedicated transformation layer between your Eloquent models and the JSON responses your API returns. This lets you control exactly what fields are exposed, add computed properties, include related data, and maintain a consistent API contract without putting transformation logic inside your controllers.
+
+### Why Use Resources?
+
+Without resources, your controller might directly return model data:
+
+```php
+// ❌ Bad: exposes all fields including sensitive ones (password, email, etc.)
+return Response::json($user->toArray());
+```
+
+With resources, you control the output explicitly:
+
+```php
+// ✅ Good: clean, controlled API response
+return (new UserResource($user))->toResponse();
+```
+
+### Creating a Resource
 
 ```bash
 php veldora make:resource PostResource
+php veldora make:resource UserResource
 ```
 
+### Defining a Resource
+
 ```php
+// app/Http/Resources/PostResource.php
 namespace App\Http\Resources;
 
 use Veldora\Framework\Http\Resources\JsonResource;
@@ -1007,30 +1412,195 @@ class PostResource extends JsonResource
             'id'           => $this->id,
             'title'        => $this->title,
             'slug'         => $this->slug,
-            'excerpt'      => substr($this->body, 0, 120),
+            'excerpt'      => substr($this->body, 0, 120) . '...',
             'published_at' => $this->published_at?->format('Y-m-d H:i:s'),
+            'is_published' => (bool) $this->is_published,
             'author'       => [
-                'id'   => $this->author->id,
-                'name' => $this->author->name,
+                'id'     => $this->author->id,
+                'name'   => $this->author->name,
+                'avatar' => storage('public')->url($this->author->avatar_path ?? 'default.png'),
+            ],
+            'meta' => [
+                'comment_count' => $this->comments()->count(),
             ],
         ];
     }
 }
 ```
 
-```php
-// In your controller:
-return (new PostResource($post))->toResponse();
+### Returning Single Resources
 
-// Or return paginated collection with meta & links:
-return PostResource::collection(Post::paginate(10))->toResponse();
+```php
+// routes/web.php
+$router->get('/api/posts/{id}', [PostController::class, 'show']);
+
+// app/Controllers/PostController.php
+public function show(string $id): Response
+{
+    $post = Post::find((int) $id);
+
+    if (! $post) {
+        return Response::json(['error' => 'Post not found'], 404);
+    }
+
+    return (new PostResource($post))->toResponse();
+}
+```
+
+Response:
+```json
+{
+  "id": 1,
+  "title": "Hello Veldora",
+  "slug": "hello-veldora",
+  "excerpt": "Veldora is a modern PHP framework...",
+  "published_at": "2026-08-23 14:00:00",
+  "is_published": true,
+  "author": { "id": 5, "name": "Jane Doe", "avatar": "/storage/avatars/user-5.png" },
+  "meta": { "comment_count": 12 }
+}
+```
+
+### Returning Resource Collections
+
+```php
+// Return all posts as a collection
+public function index(Request $request): Response
+{
+    $posts = Post::where('is_published', '=', 1)
+                 ->orderBy('created_at', 'DESC')
+                 ->get();
+
+    return PostResource::collection($posts)->toResponse();
+}
+```
+
+### Returning Paginated Collections
+
+Pass a paginator instead of a collection to automatically include `meta` and `links`:
+
+```php
+public function index(Request $request): Response
+{
+    $page = (int) $request->query('page', 1);
+    $paginator = Post::where('is_published', '=', 1)->paginate(15, $page);
+
+    return PostResource::collection($paginator)->toResponse();
+}
+```
+
+Response:
+```json
+{
+  "data": [...],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 120,
+    "last_page": 8
+  },
+  "links": {
+    "first": "/api/posts?page=1",
+    "last": "/api/posts?page=8",
+    "prev": null,
+    "next": "/api/posts?page=2"
+  }
+}
+```
+
+### Building a Complete REST API
+
+```php
+// routes/web.php — RESTful API routes
+$router->group(['prefix' => '/api'], function ($r) {
+    $r->get('/posts',        [PostController::class, 'index']);   // GET  /api/posts
+    $r->post('/posts',       [PostController::class, 'store']);   // POST /api/posts
+    $r->get('/posts/{id}',   [PostController::class, 'show']);    // GET  /api/posts/1
+    $r->put('/posts/{id}',   [PostController::class, 'update']);  // PUT  /api/posts/1
+    $r->delete('/posts/{id}',[PostController::class, 'destroy']); // DELETE /api/posts/1
+});
+
+// app/Controllers/PostController.php
+class PostController
+{
+    public function index(Request $request): Response
+    {
+        $page  = (int) $request->query('page', 1);
+        $posts = Post::where('is_published', '=', 1)->paginate(15, $page);
+        return PostResource::collection($posts)->toResponse();
+    }
+
+    public function store(Request $request): Response
+    {
+        $data = $request->validated([
+            'title' => 'required|min:3|max:255',
+            'body'  => 'required|min:10',
+        ]);
+
+        $post = Post::create([
+            ...$data,
+            'user_id'      => auth()->id(),
+            'slug'         => strtolower(str_replace(' ', '-', $data['title'])),
+            'is_published' => 1,
+        ]);
+
+        return (new PostResource($post))->toResponse();
+    }
+
+    public function update(string $id, Request $request): Response
+    {
+        $post = Post::find((int) $id);
+
+        if (! $post || $post->user_id !== auth()->id()) {
+            return Response::json(['error' => 'Not found or unauthorized'], 403);
+        }
+
+        $data = $request->validated([
+            'title' => 'required|min:3|max:255',
+            'body'  => 'required|min:10',
+        ]);
+
+        $post->title = $data['title'];
+        $post->body  = $data['body'];
+        $post->save();
+
+        return (new PostResource($post))->toResponse();
+    }
+
+    public function destroy(string $id): Response
+    {
+        $post = Post::find((int) $id);
+
+        if (! $post || $post->user_id !== auth()->id()) {
+            return Response::json(['error' => 'Not found or unauthorized'], 403);
+        }
+
+        $post->delete();
+
+        return Response::json(['message' => 'Post deleted successfully']);
+    }
+}
 ```
 
 ---
 
 ## 19. Testing & Model Factories
 
-Veldora includes an expressive testing framework built on top of PHPUnit.
+Veldora includes an expressive testing framework built on top of PHPUnit. Write feature tests that simulate real HTTP requests, assert on responses, and verify database state — without needing a real browser.
+
+### Setting Up Tests
+
+Tests live in the `tests/` directory. Run the full test suite with:
+
+```bash
+php vendor/bin/phpunit
+```
+
+Or run a single test file:
+
+```bash
+php vendor/bin/phpunit tests/Feature/PostTest.php
+```
 
 ### Writing HTTP Feature Tests
 
@@ -1062,13 +1632,178 @@ class PostTest extends TestCase
         $response->assertRedirect('/posts');
         $this->assertDatabaseHas('posts', ['title' => 'My First Post']);
     }
+
+    public function test_user_can_view_their_posts(): void
+    {
+        $user = (new UserFactory())->create();
+        $post = (new PostFactory())->create(['user_id' => $user->id, 'title' => 'My Post']);
+
+        $response = $this->actingAs($user)->get('/posts');
+
+        $response->assertOk();
+        $response->assertSee('My Post');
+    }
+
+    public function test_user_cannot_delete_another_users_post(): void
+    {
+        $owner  = (new UserFactory())->create();
+        $other  = (new UserFactory())->create();
+        $post   = (new PostFactory())->create(['user_id' => $owner->id]);
+
+        $response = $this->actingAs($other)->delete('/posts/' . $post->id);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('posts', ['id' => $post->id]); // Still exists
+    }
+}
+```
+
+### All Response Assertion Methods
+
+```php
+// HTTP status
+$response->assertOk();              // status 200
+$response->assertStatus(201);       // specific status code
+$response->assertRedirect('/login'); // 302 redirect to URL
+$response->assertNotFound();        // 404
+$response->assertForbidden();       // 403
+
+// Response body
+$response->assertSee('Welcome');         // Contains string
+$response->assertDontSee('Error');       // Does NOT contain string
+$response->assertSeeText('Dashboard');   // Contains plain text
+
+// JSON responses
+$response->assertJson(['status' => 'ok']);          // JSON has these keys/values
+$response->assertJsonCount(5, 'data');              // JSON array has N items
+$response->assertJsonPath('data.0.title', 'Post 1'); // Specific JSON path value
+```
+
+### Database Assertions
+
+```php
+// Assert a record exists in the database
+$this->assertDatabaseHas('posts', [
+    'title'   => 'My Post',
+    'user_id' => 42,
+]);
+
+// Assert a record does NOT exist in the database
+$this->assertDatabaseMissing('posts', ['title' => 'Deleted Post']);
+
+// Assert a record was soft-deleted (deleted_at is not null)
+$this->assertSoftDeleted('posts', ['id' => 1]);
+```
+
+### Model Factories
+
+Factories let you generate fake model instances for tests and seeders without writing manual SQL or repetitive `User::create(...)` calls.
+
+Generate a factory:
+
+```bash
+php veldora make:factory PostFactory
+```
+
+Define the factory:
+
+```php
+// database/factories/PostFactory.php
+namespace Database\Factories;
+
+use App\Models\Post;
+use Veldora\Framework\Database\Factory;
+
+class PostFactory extends Factory
+{
+    protected string $model = Post::class;
+
+    public function definition(): array
+    {
+        return [
+            'user_id'      => (new UserFactory())->create()->id,
+            'title'        => $this->faker->sentence(6),
+            'slug'         => $this->faker->slug(),
+            'body'         => $this->faker->paragraphs(3, true),
+            'is_published' => 1,
+            'published_at' => $this->faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d H:i:s'),
+        ];
+    }
+}
+```
+
+Use factories in tests:
+
+```php
+// Create a single instance and persist to database
+$post = (new PostFactory())->create();
+
+// Create with overridden attributes
+$draftPost = (new PostFactory())->create(['is_published' => 0]);
+
+// Create multiple instances
+$posts = (new PostFactory())->count(5)->create();
+
+// Make instance WITHOUT persisting (for unit tests)
+$post = (new PostFactory())->make();
+```
+
+### Testing JSON API Endpoints
+
+```php
+class PostApiTest extends TestCase
+{
+    public function test_api_returns_paginated_posts(): void
+    {
+        (new PostFactory())->count(20)->create();
+
+        $response = $this->get('/api/posts?page=1');
+
+        $response->assertOk();
+        $response->assertJson(['meta' => ['per_page' => 15]]);
+        $response->assertJsonCount(15, 'data');
+    }
+
+    public function test_api_requires_auth_for_store(): void
+    {
+        $response = $this->post('/api/posts', [
+            'title' => 'Test',
+            'body'  => 'Body',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_api_creates_post_for_authenticated_user(): void
+    {
+        $user = (new UserFactory())->create();
+
+        $response = $this->actingAs($user)->post('/api/posts', [
+            'title' => 'New API Post',
+            'body'  => 'This is the post body content here.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('title', 'New API Post');
+        $this->assertDatabaseHas('posts', ['title' => 'New API Post', 'user_id' => $user->id]);
+    }
 }
 ```
 
 ### Running the Test Suite
 
 ```bash
+# Run all tests
 php vendor/bin/phpunit
+
+# Run a single test file
+php vendor/bin/phpunit tests/Feature/PostTest.php
+
+# Run tests matching a filter
+php vendor/bin/phpunit --filter test_guests_cannot_create_posts
+
+# Run with verbose output
+php vendor/bin/phpunit --testdox
 ```
 
 ---
