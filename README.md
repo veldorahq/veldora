@@ -1,6 +1,8 @@
 <div align="center">
 
-# ▲ Veldora
+<img src="https://raw.githubusercontent.com/veldorahq/veldora-vscode/main/images/v-icon.png" width="80" height="80" alt="Veldora Logo">
+
+# Veldora
 
 **A modern PHP framework you actually own.**
 
