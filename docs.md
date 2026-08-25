@@ -2410,26 +2410,46 @@ Logging:
 
 HTTP Client:
   $res = Http::get('https://api.example.com/data');
-  $res = Http::withToken('token')->post('https://api.example.com/items', ['name' => 'Item']);
-  $data = $res->json();
+  $res = Http::withToken('token')->post('hDatabase & ORM Enhancements:
+  // DB Facade & Transactions
+  db()->transaction(function() {
+      db()->statement("UPDATE accounts SET balance = balance - 100 WHERE id = 1");
+      db()->statement("UPDATE accounts SET balance = balance + 100 WHERE id = 2");
+  });
 
-Testing:
-  class PostTest extends TestCase {
-      public function test_can_view_posts() {
-          $res = $this->get('/posts');
-          $res->assertOk()->assertSee('All Posts');
-      }
-      public function test_auth_required() {
-          $res = $this->post('/posts', ['title' => 'Test']);
-          $res->assertStatus(302)->assertRedirect('/login');
-      }
+  // Soft Deletes
+  class Post extends Model {
+      use \Veldora\Framework\Database\SoftDeletes;
   }
+  Post::withTrashed()->get();
+  Post::onlyTrashed()->get();
+  $post->restore();
 
-UI Components (21 available):
+  // Model Lifecycle Events
+  Post::creating(function (Post $post) {
+      $post->slug = \Veldora\Framework\Support\Str::slug($post->title);
+  });
+
+Routing & Helpers:
+  $url = route('users.show', ['id' => 42]);
+  ->middleware('throttle:60,1') // 60 requests per 1 minute window
+
+Maintenance Mode:
+  php veldora down --secret=mysecret
+  php veldora up
+
+Authentication Scaffolding (Zero-dependency .veldora.php templates):
+  php veldora make:auth
+  // Generates Login, Register, Forgot Password, Reset Password, Profile, Email Verify
+
+UI Components (41+ available):
   button, input, textarea, select, checkbox, radio, badge, alert, card,
   modal, spinner, avatar, dropdown, navbar, toast, tabs, accordion,
-  progress, tooltip, breadcrumb, table.
-  Install: php veldora add button input modal tabs
+  progress, tooltip, breadcrumb, table, switch, pagination, skeleton,
+  empty, divider, drawer, popover, confirm, datepicker, fileupload,
+  combobox, inputgroup, stat, datatable, timeline, stepper, sidebar,
+  container, footer, rating.
+  Install: php veldora add button input modal tabs footer rating
 
 ================================================================================
 9. AI DEVELOPER CODE GENERATION RULES
@@ -2439,10 +2459,12 @@ UI Components (21 available):
    - Veldora\Framework\Http\Request
    - Veldora\Framework\Http\Response
    - Veldora\Framework\Database\Model
+   - Veldora\Framework\Database\DB
+   - Veldora\Framework\Database\SoftDeletes
    - Veldora\Framework\Database\Schema\Schema
    - Veldora\Framework\Database\Schema\Blueprint
    - Veldora\Framework\Database\Schema\Migration
-3. Do NOT import non-existent Laravel facades (e.g. Route::, DB::, Schema:: without proper Veldora namespace, Auth::). Use Veldora router ($router), models, and helpers (auth(), view(), cache(), storage(), mailer(), log_info()).
+3. In views (.veldora.php), ALWAYS use native Veldora templating directives (@csrf, @method('PUT'), @if, @foreach, {{ $var }}) and <x-component> tags. Never output raw unstyled HTML forms.
 4. Always generate complete, fully working, syntactically valid code without placeholders or omissions.
 ```
 
