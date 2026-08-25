@@ -30,7 +30,7 @@ The Veldora ecosystem is split into focused, modular packages:
 - **[create-veldora-app](https://github.com/veldorahq/create-veldora-app)**: Fast project scaffolder available via `npx create-veldora-app`.
 - **[Veldora UI](https://github.com/veldorahq/veldora-ui)**: 39 pre-styled, accessible UI components with zero runtime JS required.
 - **[Veldora VS Code](https://github.com/veldorahq/veldora-vscode)**: Official IDE extension featuring syntax highlighting, IntelliSense snippets, and built-in file icons.
-- **[Documentation](https://github.com/veldorahq/veldora-docs)**: Live interactive documentation website and component previewer at [veldorahq.dev](https://veldorahq.dev).
+- **[Documentation](https://github.com/veldorahq/docs)**: Live interactive documentation website and component previewer at [veldora.modrao.com](https://veldora.modrao.com).
 
 ---
 
@@ -38,5 +38,5 @@ The Veldora ecosystem is split into focused, modular packages:
 
 - **Founder & Lead Architect**: [Shahriyar Fahim](https://github.com/shahriyar-fahim)
 - **Organization**: [Veldora HQ](https://github.com/veldorahq)
-- **Official Website**: [https://veldorahq.dev](https://veldorahq.dev)
+- **Official Website**: [https://veldora.modrao.com](https://veldora.modrao.com)
 - **License**: MIT (Free & Open Source forever)

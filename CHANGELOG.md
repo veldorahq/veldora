@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored `public/index.php` to boot through early handler registration.
 - Colorized development server logs (`php veldora serve`) with real-time HTTP status, methods, and response times.
-- Updated all official documentation references to `https://veldorahq.dev`.
+- Updated all official documentation references to `https://veldora.modrao.com`.
 
 ---
 

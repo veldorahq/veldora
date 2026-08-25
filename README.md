@@ -99,10 +99,11 @@ Use them seamlessly in any template:
 
 | Repository | Description |
 |---|---|
-| [veldorahq/create-veldora-app](https://github.com/veldorahq/create-veldora-app) | Official npm initializer & scaffolding package |
+| [veldorahq/veldora-core](https://github.com/veldorahq/veldora-core) | Framework Core engine (HTTP, ORM, Auth, Events, Queues, Mail) |
+| [veldorahq/create-veldora-app](https://github.com/veldorahq/create-veldora-app) | Official npm initializer & scaffolding CLI |
 | [veldorahq/veldora-ui](https://github.com/veldorahq/veldora-ui) | UI Component Registry & Styles |
 | [veldorahq/veldora-vscode](https://github.com/veldorahq/veldora-vscode) | Official VS Code extension (syntax, snippets, file icons) |
-| [veldorahq/veldora-docs](https://github.com/veldorahq/veldora-docs) | Official documentation web application |
+| [veldorahq/docs](https://github.com/veldorahq/docs) | Official documentation web application |
 
 ---
 
