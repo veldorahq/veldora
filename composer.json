@@ -1,6 +1,6 @@
 {
-    "name": "veldora/monorepo",
-    "description": "Veldora Monorepo Workspace",
+    "name": "veldora/veldora",
+    "description": "The Veldora PHP Framework",
     "license": "MIT",
     "type": "project",
     "require": {
