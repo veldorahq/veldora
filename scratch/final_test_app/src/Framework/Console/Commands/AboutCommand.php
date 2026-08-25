@@ -30,7 +30,7 @@ class AboutCommand extends Command
         $dbDriver = env('DB_CONNECTION', 'sqlite');
         $dbName = env('DB_DATABASE', 'database/veldora.sqlite');
 
-        echo "\n\033[35m\033[1m  ▲ Veldora Framework\033[0m \033[90mv0.4.0\033[0m\n";
+        echo "\n\033[35m\033[1m  ▲ Veldora Framework\033[0m \033[90mv0.5.0\033[0m\n";
         echo "  \033[90mThe modern PHP framework you actually own.\033[0m\n\n";
 
         echo "  \033[1;36mEnvironment\033[0m\n";

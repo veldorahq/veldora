@@ -35,17 +35,26 @@ class Handler
         // 3. Fatal / parse / compile error catcher (runs on shutdown)
         register_shutdown_function(static function () use ($handler): void {
             $error = error_get_last();
-            if ($error !== null && in_array($error['type'], [
-                E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR,
-                E_USER_ERROR, E_RECOVERABLE_ERROR,
-            ], true)) {
+            if (
+                $error !== null && in_array($error['type'], [
+                    E_ERROR,
+                    E_PARSE,
+                    E_CORE_ERROR,
+                    E_COMPILE_ERROR,
+                    E_USER_ERROR,
+                    E_RECOVERABLE_ERROR,
+                ], true)
+            ) {
                 // Clear any partial output that may have been buffered
                 while (ob_get_level() > 0) {
                     ob_end_clean();
                 }
                 $e = new ErrorException(
-                    $error['message'], 0, $error['type'],
-                    $error['file'], $error['line']
+                    $error['message'],
+                    0,
+                    $error['type'],
+                    $error['file'],
+                    $error['line']
                 );
                 $handler->handleException($e);
             }
@@ -83,7 +92,7 @@ class Handler
 
         // Determine status code and debug mode
         $statusCode = $this->resolveStatusCode($e);
-        $isDebug    = $this->isDebugMode();
+        $isDebug = $this->isDebugMode();
 
         if (!headers_sent()) {
             http_response_code($statusCode);
@@ -125,8 +134,10 @@ class Handler
 
         // Exception code used as HTTP status
         $code = $e->getCode();
-        if ($code === 403) return 403;
-        if ($code === 404) return 404;
+        if ($code === 403)
+            return 403;
+        if ($code === 404)
+            return 404;
 
         return 500;
     }
@@ -150,11 +161,13 @@ class Handler
         // Walk up to find .env file relative to public/
         $dir = dirname(__DIR__, 4); // template root from src/Framework/Foundation/Exception
         $envFile = $dir . '/.env';
-        if (!file_exists($envFile)) return null;
+        if (!file_exists($envFile))
+            return null;
 
         foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
             $line = trim($line);
-            if (str_starts_with($line, '#')) continue;
+            if (str_starts_with($line, '#'))
+                continue;
             if (str_starts_with($line, 'APP_DEBUG=')) {
                 return trim(substr($line, strlen('APP_DEBUG=')), " \t\"'");
             }
@@ -540,10 +553,10 @@ HTML;
     protected function renderDebugPage(Throwable $e, int $statusCode = 500): string
     {
         $exceptionName = get_class($e);
-        $shortName     = basename(str_replace('\\', '/', $exceptionName));
-        $message       = htmlspecialchars($e->getMessage() ?: 'No message provided.', ENT_QUOTES, 'UTF-8');
-        $file          = htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8');
-        $line          = $e->getLine();
+        $shortName = basename(str_replace('\\', '/', $exceptionName));
+        $message = htmlspecialchars($e->getMessage() ?: 'No message provided.', ENT_QUOTES, 'UTF-8');
+        $file = htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8');
+        $line = $e->getLine();
 
         // ── Code snippet ────────────────────────────────────────────────
         $codeSnippet = '';
@@ -551,14 +564,14 @@ HTML;
             $lines = file($e->getFile());
             if ($lines !== false) {
                 $start = max(0, $line - 8);
-                $end   = min(count($lines) - 1, $line + 6);
+                $end = min(count($lines) - 1, $line + 6);
 
                 for ($i = $start; $i <= $end; $i++) {
-                    $currLine    = $i + 1;
+                    $currLine = $i + 1;
                     $lineContent = htmlspecialchars($lines[$i] ?? '', ENT_QUOTES, 'UTF-8');
-                    $isErr       = ($currLine === $line);
-                    $cls         = $isErr ? 'code-line error-line' : 'code-line';
-                    $arrow       = $isErr ? '<span class="err-arrow">▶</span>' : '<span class="err-arrow"> </span>';
+                    $isErr = ($currLine === $line);
+                    $cls = $isErr ? 'code-line error-line' : 'code-line';
+                    $arrow = $isErr ? '<span class="err-arrow">▶</span>' : '<span class="err-arrow"> </span>';
                     $codeSnippet .= "<div class=\"{$cls}\">{$arrow}<span class=\"line-num\">{$currLine}</span><span class=\"line-code\">{$lineContent}</span></div>";
                 }
             }
@@ -567,20 +580,20 @@ HTML;
         }
 
         // ── Stack trace ─────────────────────────────────────────────────
-        $traceHtml      = '';
-        $fullTraceStr   = $e->getTraceAsString();
+        $traceHtml = '';
+        $fullTraceStr = $e->getTraceAsString();
 
         foreach ($e->getTrace() as $index => $step) {
-            $tFile    = isset($step['file']) ? htmlspecialchars($step['file'], ENT_QUOTES, 'UTF-8') : '[internal]';
-            $tLine    = $step['line'] ?? '-';
-            $tClass   = $step['class'] ?? '';
-            $tType    = $step['type'] ?? '';
-            $tFunc    = htmlspecialchars($step['function'] ?? '', ENT_QUOTES, 'UTF-8');
-            $call     = $tClass ? htmlspecialchars("{$tClass}{$tType}", ENT_QUOTES, 'UTF-8') . "<b>{$tFunc}()</b>" : "<b>{$tFunc}()</b>";
+            $tFile = isset($step['file']) ? htmlspecialchars($step['file'], ENT_QUOTES, 'UTF-8') : '[internal]';
+            $tLine = $step['line'] ?? '-';
+            $tClass = $step['class'] ?? '';
+            $tType = $step['type'] ?? '';
+            $tFunc = htmlspecialchars($step['function'] ?? '', ENT_QUOTES, 'UTF-8');
+            $call = $tClass ? htmlspecialchars("{$tClass}{$tType}", ENT_QUOTES, 'UTF-8') . "<b>{$tFunc}()</b>" : "<b>{$tFunc}()</b>";
 
-            $isApp    = !str_contains($tFile, 'vendor') && !str_contains($tFile, '[internal');
+            $isApp = !str_contains($tFile, 'vendor') && !str_contains($tFile, '[internal');
             $tagClass = $isApp ? 'tag-app' : 'tag-vendor';
-            $tagText  = $isApp ? 'App' : 'Vendor';
+            $tagText = $isApp ? 'App' : 'Vendor';
 
             $traceHtml .= <<<HTML
             <div class="trace-item">
@@ -596,11 +609,11 @@ HTML;
 
         // ── Request / env info ──────────────────────────────────────────
         $phpVersion = PHP_VERSION;
-        $reqUri     = htmlspecialchars($_SERVER['REQUEST_URI']  ?? '/', ENT_QUOTES, 'UTF-8');
-        $reqMethod  = htmlspecialchars($_SERVER['REQUEST_METHOD'] ?? 'GET', ENT_QUOTES, 'UTF-8');
-        $reqHost    = htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost', ENT_QUOTES, 'UTF-8');
-        $memMB      = round(memory_get_usage(true) / 1024 / 1024, 2);
-        $copyPL     = addslashes("{$exceptionName}: {$e->getMessage()}\nIn {$e->getFile()}:{$e->getLine()}\n\n{$fullTraceStr}");
+        $reqUri = htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/', ENT_QUOTES, 'UTF-8');
+        $reqMethod = htmlspecialchars($_SERVER['REQUEST_METHOD'] ?? 'GET', ENT_QUOTES, 'UTF-8');
+        $reqHost = htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost', ENT_QUOTES, 'UTF-8');
+        $memMB = round(memory_get_usage(true) / 1024 / 1024, 2);
+        $copyPL = addslashes("{$exceptionName}: {$e->getMessage()}\nIn {$e->getFile()}:{$e->getLine()}\n\n{$fullTraceStr}");
 
         return <<<HTML
 {$this->sharedHead("{$shortName}: {$message}", true)}
@@ -884,7 +897,7 @@ HTML;
             </div>
             <div class="info-row">
                 <span class="info-label">Framework</span>
-                <span class="info-val">Veldora v0.4.0</span>
+                <span class="info-val">Veldora v0.5.0</span>
             </div>
             <div class="info-row">
                 <span class="info-label">PHP</span>

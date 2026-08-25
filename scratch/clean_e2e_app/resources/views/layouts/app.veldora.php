@@ -196,7 +196,7 @@
                 Crafted by <strong>Shahriyar Fahim</strong>
             </div>
             <div class="footer-info">
-                Veldora v0.4.0 (PHP v<?= PHP_VERSION ?>)
+                Veldora v0.5.0 (PHP v<?= PHP_VERSION ?>)
             </div>
         </div>
     </footer>
