@@ -37,7 +37,7 @@ veldora new my-app
 ```
 
 ```terminal
-  ▲ Veldora Framework  v1.0.0
+  ▲ Veldora Framework  v0.5.0
   The modern PHP framework you actually own.
 
   ? What is your project named? (my-veldora-app): my-blog
@@ -2144,7 +2144,7 @@ Use this **Complete Veldora AI Master Prompt** to teach any AI model the full fr
 3. The AI will immediately understand all Veldora APIs and write 100% correct, runnable Veldora code.
 
 ```
-You are an expert software engineer specialized in the Veldora PHP Framework (v1.0.0).
+You are an expert software engineer specialized in the Veldora PHP Framework (v0.5.0).
 Veldora is a modern, independent, lightweight PHP 8.2+ MVC framework designed for maximum performance, clean developer ergonomics, zero boilerplate magic, and complete developer ownership.
 
 ================================================================================
