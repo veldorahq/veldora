@@ -41,14 +41,14 @@
 .DS_Store
 Thumbs.db
 
-# Sibling ecosystem repositories
+# Sibling ecosystem repositories (managed in their own repos)
 /veldora-core/
 /veldora-ui/
 /create-veldora-app/
 /docs-site/
 /veldora-vscode/
 
-# Internal docs & planning assets (ignored in public starter app)
+# Internal private planning notes (ignored in public starter app)
 /ARCHITECTURE.md
 /ABOUT.md
 /docs.md
@@ -56,8 +56,4 @@ Thumbs.db
 /default-favicon/
 /phpstan.neon
 /phpunit.xml
-/CHANGELOG.md
-/CODE_OF_CONDUCT.md
-/CONTRIBUTING.md
-/SECURITY.md
 /composer.lock

@@ -97,22 +97,39 @@ class ComponentRegistry
     private function button(): array
     {
         return [
-            'description' => 'Clickable button — variant, size, disabled support',
+            'description' => 'Clickable button — variant, size, disabled, outline, skeuomorphic, flat, neumorphic, and glass support',
             'usage'       => '<x-button variant="primary" size="md">Click me</x-button>',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Button Component
-// Props: variant (primary|secondary|ghost|danger), size (sm|md|lg), disabled (bool), type (button|submit|reset)
+// Props: variant (primary|secondary|ghost|danger|success|warning|skeuomorphic|flat|neumorphic|glass|outline-primary|outline-secondary|outline-danger), size (sm|md|lg), disabled (bool), type (button|submit|reset)
 $variant  = $variant  ?? 'primary';
 $size     = $size     ?? 'md';
 $disabled = $disabled ?? false;
 $type     = $type     ?? 'button';
 
 $variants = [
-    'primary'   => 'vui-btn vui-btn-primary',
-    'secondary' => 'vui-btn vui-btn-secondary',
-    'ghost'     => 'vui-btn vui-btn-ghost',
-    'danger'    => 'vui-btn vui-btn-danger',
+    'primary'           => 'vui-btn vui-btn-primary',
+    'secondary'         => 'vui-btn vui-btn-secondary',
+    'ghost'             => 'vui-btn vui-btn-ghost',
+    'danger'            => 'vui-btn vui-btn-danger',
+    'success'           => 'vui-btn vui-btn-success',
+    'warning'           => 'vui-btn vui-btn-warning',
+    'outline-primary'   => 'vui-btn vui-btn-outline-primary',
+    'outline-secondary' => 'vui-btn vui-btn-outline-secondary',
+    'outline-danger'    => 'vui-btn vui-btn-outline-danger',
+    'skeuomorphic'      => 'vui-btn-skeuo',
+    'skeuo'             => 'vui-btn-skeuo',
+    'skeuo-neutral'     => 'vui-btn-skeuo vui-btn-skeuo-neutral',
+    'skeuo-danger'      => 'vui-btn-skeuo vui-btn-skeuo-danger',
+    'flat'              => 'vui-btn-flat',
+    'flat-outline'      => 'vui-btn-flat vui-btn-flat-outline',
+    'flat-neutral'      => 'vui-btn-flat vui-btn-flat-neutral',
+    'neumorphic'        => 'vui-btn-neumorphic',
+    'soft'              => 'vui-btn-neumorphic',
+    'neumorphic-accent' => 'vui-btn-neumorphic vui-btn-neumorphic-accent',
+    'glass'             => 'vui-btn-glass',
+    'glass-neutral'     => 'vui-btn-glass vui-btn-glass-neutral',
 ];
 $sizes = [
     'sm' => 'vui-btn-sm',
@@ -120,7 +137,12 @@ $sizes = [
     'lg' => 'vui-btn-lg',
 ];
 
-$classes  = ($variants[$variant] ?? $variants['primary']) . ' ' . ($sizes[$size] ?? $sizes['md']);
+$baseClass = $variants[$variant] ?? ('vui-btn vui-btn-' . $variant);
+$sizeClass = ($sizes[$size] ?? $sizes['md']);
+$classes   = str_contains($baseClass, 'vui-btn-skeuo') || str_contains($baseClass, 'vui-btn-neumorphic') || str_contains($baseClass, 'vui-btn-glass') || str_contains($baseClass, 'vui-btn-flat')
+    ? $baseClass
+    : ($baseClass . ' ' . $sizeClass);
+
 $disabledAttr = $disabled ? 'disabled aria-disabled="true"' : '';
 ?>
 <button type="<?= htmlspecialchars($type) ?>" class="<?= $classes ?>" <?= $disabledAttr ?>>
@@ -311,41 +333,70 @@ TEMPLATE,
     private function checkbox(): array
     {
         return [
-            'description' => 'Checkbox input with label and checked state',
-            'usage'       => '<x-checkbox name="agree" label="I agree to the terms" />',
+            'description' => 'Checkbox input supporting standard, skeuomorphic 3D, flat minimal 2D, and neumorphic soft UI',
+            'usage'       => '<x-checkbox variant="skeuomorphic" name="notify" label="Enable notifications" :checked="true" />',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Checkbox Component
-// Props: name, label, value, checked, disabled, error, id
+// Props: name, label, value, checked, disabled, error, id, variant (default|skeuomorphic|flat|neumorphic)
 $value    = $value    ?? '1';
-$checked  = $checked  ?? false;
-$disabled = $disabled ?? false;
+$checked  = !empty($checked);
+$disabled = !empty($disabled);
 $error    = $error    ?? null;
 $id       = $id       ?? ($name ?? 'checkbox_' . uniqid());
 $label    = $label    ?? null;
+$variant  = $variant  ?? 'default';
 
 $checkedAttr  = $checked  ? 'checked'   : '';
 $disabledAttr = $disabled ? 'disabled'  : '';
+
+$variantClassMap = [
+    'skeuomorphic' => 'vui-checkbox-custom vui-checkbox-skeuo',
+    'skeuo'        => 'vui-checkbox-custom vui-checkbox-skeuo',
+    'flat'         => 'vui-checkbox-custom vui-checkbox-flat',
+    'neumorphic'   => 'vui-checkbox-custom vui-checkbox-neumorphic',
+    'soft'         => 'vui-checkbox-custom vui-checkbox-neumorphic',
+];
+$isCustom = isset($variantClassMap[$variant]);
 ?>
-<div class="vui-checkbox-wrap">
-    <input
-        type="checkbox"
-        id="<?= htmlspecialchars($id) ?>"
-        name="<?= htmlspecialchars($name ?? '') ?>"
-        value="<?= htmlspecialchars($value) ?>"
-        class="vui-checkbox"
-        <?= $checkedAttr ?> <?= $disabledAttr ?>
-    >
-    <?php if ($label): ?>
-        <label class="vui-checkbox-label" for="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></label>
-    <?php endif; ?>
-    <?php if ($error): ?>
-        <p class="vui-field-error" role="alert"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
-</div>
+<?php if ($isCustom): ?>
+    <label class="<?= $variantClassMap[$variant] ?> <?= $disabled ? 'vui-checkbox-disabled' : '' ?>" for="<?= htmlspecialchars($id) ?>">
+        <input
+            type="checkbox"
+            id="<?= htmlspecialchars($id) ?>"
+            name="<?= htmlspecialchars($name ?? '') ?>"
+            value="<?= htmlspecialchars($value) ?>"
+            <?= $checkedAttr ?> <?= $disabledAttr ?>
+        >
+        <span class="vui-checkbox-box">
+            <svg class="vui-checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <?php if ($label): ?>
+            <span class="vui-checkbox-label"><?= htmlspecialchars($label) ?></span>
+        <?php endif; ?>
+    </label>
+<?php else: ?>
+    <div class="vui-checkbox-wrap">
+        <input
+            type="checkbox"
+            id="<?= htmlspecialchars($id) ?>"
+            name="<?= htmlspecialchars($name ?? '') ?>"
+            value="<?= htmlspecialchars($value) ?>"
+            class="vui-checkbox"
+            <?= $checkedAttr ?> <?= $disabledAttr ?>
+        >
+        <?php if ($label): ?>
+            <label class="vui-checkbox-label" for="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></label>
+        <?php endif; ?>
+        <?php if ($error): ?>
+            <p class="vui-field-error" role="alert"><?= htmlspecialchars($error) ?></p>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 TEMPLATE,
         ];
     }
+
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -355,33 +406,59 @@ TEMPLATE,
     private function radio(): array
     {
         return [
-            'description' => 'Radio input with label and checked state',
-            'usage'       => '<x-radio name="gender" value="male" label="Male" />',
+            'description' => 'Radio input supporting multiple aesthetics: standard, skeuomorphic 3D, flat minimal 2D, and neumorphic soft UI',
+            'usage'       => '<x-radio variant="skeuomorphic" name="plan" value="pro" label="Pro Plan" :checked="true" />',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Radio Component
-// Props: name, label, value, checked, disabled, id
-$checked  = $checked  ?? false;
-$disabled = $disabled ?? false;
+// Props: name, label, value, checked, disabled, id, variant (default|skeuomorphic|flat|neumorphic)
+$checked  = !empty($checked);
+$disabled = !empty($disabled);
 $id       = $id       ?? ($name ?? 'radio') . '_' . ($value ?? uniqid());
 $label    = $label    ?? null;
+$variant  = $variant  ?? 'default';
 
 $checkedAttr  = $checked  ? 'checked'  : '';
 $disabledAttr = $disabled ? 'disabled' : '';
+
+$variantClassMap = [
+    'skeuomorphic' => 'vui-radio-custom vui-radio-skeuo',
+    'skeuo'        => 'vui-radio-custom vui-radio-skeuo',
+    'flat'         => 'vui-radio-custom vui-radio-flat',
+    'neumorphic'   => 'vui-radio-custom vui-radio-neumorphic',
+    'soft'         => 'vui-radio-custom vui-radio-neumorphic',
+];
+$isCustom = isset($variantClassMap[$variant]);
 ?>
-<div class="vui-radio-wrap">
-    <input
-        type="radio"
-        id="<?= htmlspecialchars($id) ?>"
-        name="<?= htmlspecialchars($name ?? '') ?>"
-        value="<?= htmlspecialchars($value ?? '') ?>"
-        class="vui-radio"
-        <?= $checkedAttr ?> <?= $disabledAttr ?>
-    >
-    <?php if ($label): ?>
-        <label class="vui-radio-label" for="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></label>
-    <?php endif; ?>
-</div>
+<?php if ($isCustom): ?>
+    <label class="<?= $variantClassMap[$variant] ?> <?= $disabled ? 'vui-radio-disabled' : '' ?>" for="<?= htmlspecialchars($id) ?>">
+        <input
+            type="radio"
+            id="<?= htmlspecialchars($id) ?>"
+            name="<?= htmlspecialchars($name ?? '') ?>"
+            value="<?= htmlspecialchars($value ?? '') ?>"
+            <?= $checkedAttr ?> <?= $disabledAttr ?>
+        >
+        <span class="vui-radio-disc"><span class="vui-radio-dot"></span></span>
+        <?php if ($label): ?>
+            <span class="vui-radio-label"><?= htmlspecialchars($label) ?></span>
+        <?php endif; ?>
+    </label>
+<?php else: ?>
+    <div class="vui-radio-wrap">
+        <input
+            type="radio"
+            id="<?= htmlspecialchars($id) ?>"
+            name="<?= htmlspecialchars($name ?? '') ?>"
+            value="<?= htmlspecialchars($value ?? '') ?>"
+            class="vui-radio"
+            <?= $checkedAttr ?> <?= $disabledAttr ?>
+        >
+        <?php if ($label): ?>
+            <label class="vui-radio-label" for="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($label) ?></label>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 TEMPLATE,
         ];
     }
@@ -586,22 +663,67 @@ TEMPLATE,
     private function spinner(): array
     {
         return [
-            'description' => 'Animated loading spinner with size variants',
-            'usage'       => '<x-spinner size="md" label="Loading..." />',
+            'description' => 'Animated loading spinner with 12 pure CSS variants and sizes',
+            'usage'       => '<x-spinner variant="dual-ring" size="md" label="Loading..." />',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Spinner Component
-// Props: size (sm|md|lg), label (screen-reader text)
-$size  = $size  ?? 'md';
-$label = $label ?? 'Loading...';
+// Props: variant (classic|dual-ring|bounce-dots|pulse|ring-pulse|wave-bars|dot-grid|spinning-bars|orbit), size (sm|md|lg), label, color
+$variant = $variant ?? 'classic';
+$size    = $size    ?? 'md';
+$label   = $label   ?? 'Loading...';
+$color   = $color   ?? null;
+$styleAttr = $color ? 'style="--vui-spinner-color:' . htmlspecialchars($color) . '"' : '';
 
 $sizes = ['sm' => 'vui-spinner-sm', 'md' => 'vui-spinner-md', 'lg' => 'vui-spinner-lg'];
-$class = 'vui-spinner ' . ($sizes[$size] ?? $sizes['md']);
+$sizeClass = $sizes[$size] ?? $sizes['md'];
 ?>
-<span class="<?= $class ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>">
+<?php if ($variant === 'dual-ring'): ?>
+<span class="vui-spinner-dual <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span><span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'bounce-dots'): ?>
+<span class="vui-spinner-bounce <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span><span></span><span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'pulse'): ?>
+<span class="vui-spinner-pulse <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'ring-pulse'): ?>
+<span class="vui-spinner-ring-pulse <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'wave-bars'): ?>
+<span class="vui-spinner-wave <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'dot-grid'): ?>
+<span class="vui-spinner-dot-grid <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'spinning-bars'): ?>
+<span class="vui-spinner-bars <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php elseif ($variant === 'orbit'): ?>
+<span class="vui-spinner-orbit <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
+    <span class="orb-core"></span><span class="orb-satellite"></span>
+    <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
+</span>
+<?php else: ?>
+<span class="vui-spinner <?= $sizeClass ?>" role="status" aria-label="<?= htmlspecialchars($label) ?>" <?= $styleAttr ?>>
     <span class="vui-spinner-ring"></span>
     <span class="vui-sr-only"><?= htmlspecialchars($label) ?></span>
 </span>
+<?php endif; ?>
 TEMPLATE,
         ];
     }
@@ -1037,33 +1159,58 @@ TEMPLATE,
     private function switch_(): array
     {
         return [
-            'description' => 'Toggle switch — on/off boolean input with label support',
-            'usage'       => '<x-switch name="notifications" label="Enable notifications" :checked="true" />',
+            'description' => 'Toggle switch supporting standard pill, skeuomorphic 3D embossed, flat 2D, and neumorphic soft UI',
+            'usage'       => '<x-switch variant="skeuomorphic" name="notifications" label="Enable notifications" :checked="true" />',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Switch Component
-// Props: name, id, label, checked (bool), disabled (bool), size (sm|md|lg)
+// Props: name, id, label, checked (bool), disabled (bool), size (sm|md|lg), variant (default|skeuomorphic|flat|neumorphic)
 $name     = $name     ?? 'toggle';
-$id       = $id       ?? $name;
+$id       = $id       ?? ($name . '_' . uniqid());
 $label    = $label    ?? null;
 $checked  = !empty($checked);
 $disabled = !empty($disabled);
 $size     = $size     ?? 'md';
+$variant  = $variant  ?? 'default';
+
 $sizeClass = match($size) { 'sm' => 'vui-switch-sm', 'lg' => 'vui-switch-lg', default => 'vui-switch-md' };
 $checkedAttr  = $checked  ? 'checked' : '';
 $disabledAttr = $disabled ? 'disabled' : '';
+
+$variantClassMap = [
+    'skeuomorphic' => 'vui-switch-custom vui-switch-skeuo',
+    'skeuo'        => 'vui-switch-custom vui-switch-skeuo',
+    'flat'         => 'vui-switch-custom vui-switch-flat',
+    'neumorphic'   => 'vui-switch-custom vui-switch-neumorphic',
+    'soft'         => 'vui-switch-custom vui-switch-neumorphic',
+];
+$isCustom = isset($variantClassMap[$variant]);
 ?>
-<label class="vui-switch-wrapper <?= $disabled ? 'vui-switch-disabled' : '' ?>">
-    <input type="checkbox" id="<?= htmlspecialchars($id) ?>" name="<?= htmlspecialchars($name) ?>"
-           class="vui-switch-input" role="switch" aria-checked="<?= $checked ? 'true' : 'false' ?>"
-           <?= $checkedAttr ?> <?= $disabledAttr ?>>
-    <span class="vui-switch-track <?= $sizeClass ?>">
-        <span class="vui-switch-thumb"></span>
-    </span>
-    <?php if ($label): ?>
-        <span class="vui-switch-label"><?= htmlspecialchars($label) ?></span>
-    <?php endif; ?>
-</label>
+<?php if ($isCustom): ?>
+    <label class="<?= $variantClassMap[$variant] ?> <?= $disabled ? 'vui-switch-disabled' : '' ?>" for="<?= htmlspecialchars($id) ?>">
+        <input type="checkbox" id="<?= htmlspecialchars($id) ?>" name="<?= htmlspecialchars($name) ?>"
+               role="switch" aria-checked="<?= $checked ? 'true' : 'false' ?>"
+               <?= $checkedAttr ?> <?= $disabledAttr ?>>
+        <span class="vui-switch-track">
+            <span class="vui-switch-thumb"></span>
+        </span>
+        <?php if ($label): ?>
+            <span class="vui-switch-label"><?= htmlspecialchars($label) ?></span>
+        <?php endif; ?>
+    </label>
+<?php else: ?>
+    <label class="vui-switch-wrapper <?= $disabled ? 'vui-switch-disabled' : '' ?>">
+        <input type="checkbox" id="<?= htmlspecialchars($id) ?>" name="<?= htmlspecialchars($name) ?>"
+               class="vui-switch-input" role="switch" aria-checked="<?= $checked ? 'true' : 'false' ?>"
+               <?= $checkedAttr ?> <?= $disabledAttr ?>>
+        <span class="vui-switch-track <?= $sizeClass ?>">
+            <span class="vui-switch-thumb"></span>
+        </span>
+        <?php if ($label): ?>
+            <span class="vui-switch-label"><?= htmlspecialchars($label) ?></span>
+        <?php endif; ?>
+    </label>
+<?php endif; ?>
 TEMPLATE,
         ];
     }
@@ -1747,47 +1894,124 @@ TEMPLATE,
     private function sidebar(): array
     {
         return [
-            'description' => 'Sidebar — navigation sidebar with logo, nav items, and collapsible sub-menus',
-            'usage'       => '<x-sidebar :items="$navItems" logo="MyApp" />',
+            'description' => 'Sidebar — modern SaaS application navigation with workspace switcher, search trigger, categorized groups, badges, collapsible tree, and user profile footer',
+            'usage'       => '<x-sidebar :brand="[\'name\' => \'Acme Corp\', \'plan\' => \'Pro\']" :groups="$navGroups" :user="$currentUser" />',
             'template'    => <<<'TEMPLATE'
 <?php
 // Veldora UI — Sidebar Component
-// Props: items (array of {label, href, icon, active, children[]}), logo, collapsed (bool)
+// Props: brand (array or string), groups (array of {title, items[]}), items (flat array fallback), user (array), search (bool), collapsed (bool)
+$brand     = $brand     ?? ['name' => 'Veldora App', 'plan' => 'Pro', 'logo' => 'V'];
+if (is_string($brand)) { $brand = ['name' => $brand, 'plan' => 'Pro', 'logo' => strtoupper(substr($brand, 0, 1))]; }
+$groups    = $groups    ?? [];
 $items     = $items     ?? [];
-$logo      = $logo      ?? 'App';
+$user      = $user      ?? null;
+$search    = $search    ?? true;
 $collapsed = !empty($collapsed);
+$extra     = $class     ?? '';
+
+// If flat items passed without groups, wrap in single default group
+if (empty($groups) && !empty($items)) {
+    $groups = [['title' => 'Menu', 'items' => $items]];
+}
 ?>
-<aside class="vui-sidebar <?= $collapsed ? 'vui-sidebar-collapsed' : '' ?>" role="navigation">
+<aside class="vui-sidebar <?= $collapsed ? 'vui-sidebar-collapsed' : '' ?> <?= htmlspecialchars($extra) ?>" role="navigation">
+    <!-- Brand / Workspace Switcher Header -->
     <div class="vui-sidebar-header">
-        <span class="vui-sidebar-logo"><?= htmlspecialchars($logo) ?></span>
+        <a href="/" class="vui-sidebar-brand">
+            <div class="vui-sidebar-logo"><?= htmlspecialchars($brand['logo'] ?? 'V') ?></div>
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                <span class="vui-sidebar-brand-text"><?= htmlspecialchars($brand['name'] ?? 'App') ?></span>
+                <?php if (!empty($brand['plan'])): ?>
+                    <span class="vui-sidebar-brand-badge"><?= htmlspecialchars($brand['plan']) ?></span>
+                <?php endif; ?>
+            </div>
+            <span class="vui-sidebar-brand-caret">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+        </a>
     </div>
-    <nav>
-        <ul class="vui-sidebar-nav">
-            <?php foreach ($items as $item): ?>
-                <?php $active = !empty($item['active']); ?>
-                <li class="vui-nav-item <?= $active ? 'vui-nav-active' : '' ?>">
-                    <a href="<?= htmlspecialchars($item['href'] ?? '#') ?>" class="vui-nav-link">
-                        <?php if (!empty($item['icon'])): ?>
-                            <span class="vui-nav-icon" aria-hidden="true"><?= $item['icon'] ?></span>
-                        <?php endif; ?>
-                        <span class="vui-nav-label"><?= htmlspecialchars($item['label'] ?? '') ?></span>
-                    </a>
-                    <?php if (!empty($item['children'])): ?>
-                        <ul class="vui-nav-sub">
-                            <?php foreach ($item['children'] as $child): ?>
-                                <li>
-                                    <a href="<?= htmlspecialchars($child['href'] ?? '#') ?>" class="vui-nav-link vui-nav-sub-link">
-                                        <?= htmlspecialchars($child['label'] ?? '') ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    </nav>
-    <?php if (!empty($slot)): ?><div class="vui-sidebar-footer"><?= $slot ?></div><?php endif; ?>
+
+    <!-- Quick Search Command Trigger -->
+    <?php if ($search): ?>
+        <div class="vui-sidebar-search-box">
+            <button type="button" class="vui-sidebar-search-btn" onclick="if(window.openSearchModal) window.openSearchModal(); else if(window.showToast) window.showToast('Search command triggered (⌘K)', 'info');">
+                <div class="vui-sidebar-search-left">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span class="vui-sidebar-search-text">Quick Search...</span>
+                </div>
+                <kbd class="vui-sidebar-search-kbd">⌘K</kbd>
+            </button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Navigation Groups -->
+    <div class="vui-sidebar-body">
+        <?php foreach ($groups as $group): ?>
+            <div class="vui-sidebar-group">
+                <?php if (!empty($group['title'])): ?>
+                    <p class="vui-sidebar-group-title"><?= htmlspecialchars($group['title']) ?></p>
+                <?php endif; ?>
+                <ul class="vui-sidebar-nav">
+                    <?php foreach ($group['items'] ?? [] as $item): ?>
+                        <?php
+                            $active = !empty($item['active']);
+                            $hasChildren = !empty($item['children']);
+                        ?>
+                        <li class="vui-sidebar-item <?= $hasChildren ? 'vui-sidebar-has-sub' : '' ?>">
+                            <a href="<?= htmlspecialchars($item['href'] ?? '#') ?>" class="vui-sidebar-link <?= $active ? 'active' : '' ?>">
+                                <?php if (!empty($item['icon'])): ?>
+                                    <span class="vui-sidebar-icon" aria-hidden="true"><?= $item['icon'] ?></span>
+                                <?php endif; ?>
+                                <span class="vui-sidebar-label"><?= htmlspecialchars($item['label'] ?? '') ?></span>
+                                <?php if (!empty($item['badge'])): ?>
+                                    <span class="vui-sidebar-badge <?= !empty($item['badge_accent']) ? 'vui-sidebar-badge-accent' : '' ?>"><?= htmlspecialchars($item['badge']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($hasChildren): ?>
+                                    <span class="vui-sidebar-chevron">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </span>
+                                <?php endif; ?>
+                            </a>
+                            <?php if ($hasChildren): ?>
+                                <ul class="vui-sidebar-sub">
+                                    <?php foreach ($item['children'] as $child): ?>
+                                        <li>
+                                            <a href="<?= htmlspecialchars($child['href'] ?? '#') ?>" class="vui-sidebar-sub-link <?= !empty($child['active']) ? 'active' : '' ?>">
+                                                <?= htmlspecialchars($child['label'] ?? '') ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endforeach; ?>
+
+        <?php if (!empty($slot)): ?>
+            <div class="vui-sidebar-custom-slot"><?= $slot ?></div>
+        <?php endif; ?>
+    </div>
+
+    <!-- User Profile Footer -->
+    <?php if ($user): ?>
+        <div class="vui-sidebar-footer">
+            <a href="<?= htmlspecialchars($user['href'] ?? '#') ?>" class="vui-sidebar-user">
+                <div class="vui-sidebar-user-avatar">
+                    <?= htmlspecialchars($user['avatar'] ?? 'U') ?>
+                    <span class="vui-sidebar-user-status"></span>
+                </div>
+                <div class="vui-sidebar-user-info">
+                    <span class="vui-sidebar-user-name"><?= htmlspecialchars($user['name'] ?? 'User') ?></span>
+                    <span class="vui-sidebar-user-role"><?= htmlspecialchars($user['role'] ?? 'Member') ?></span>
+                </div>
+                <span class="vui-sidebar-user-more">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </span>
+            </a>
+        </div>
+    <?php endif; ?>
 </aside>
 TEMPLATE,
         ];
