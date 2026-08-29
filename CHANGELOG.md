@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.2] - 2026-08-30
+
+### Added
+- **Multi-Aesthetic Design System**: Added Skeuomorphic 3D tactile, Flat Minimalist 2D, Neumorphic Soft UI, and Glassmorphic variants for `Radio`, `Checkbox`, `Switch`, and `Button` components (`.vui-radio-skeuo`, `.vui-checkbox-skeuo`, `.vui-switch-skeuo`, `.vui-btn-skeuo`, `.vui-btn-flat`, `.vui-btn-neumorphic`, `.vui-btn-glass`).
+- **Modern SaaS Sidebar**: High-performance dashboard navigation with Workspace switcher, Quick Search (⌘K), categorized sections, active state indicator, badge pills, and user profile footer.
+- **Interactive Toast Engine**: Ambient notification system with `window.showToast(message, type, duration)` API and copy action feedback.
+- **ComponentRegistry Multi-Aesthetic Support**: Template generators updated for `<x-button>`, `<x-checkbox>`, `<x-switch>`, and `<x-radio>`.
+- **Packagist Release Sync**: Unified package version metadata to `0.5.2` across framework, UI, and scaffolding packages.
+
+### Fixed
+- Fixed horizontal inline-flex row alignment for custom radio & checkbox controls so the disc/box icon and title text always sit cleanly on the same line.
+- Fixed Packagist VCS release tag version matching.
+
+---
+
+## [0.5.1] - 2026-08-28
+
+### Added
+- Enhanced routing pipeline with strict pattern constraint matching.
+- Dark mode custom property palette enhancements.
+
+### Fixed
+- Component registry CLI installer directory path resolution.
+
+---
+
+## [0.5.0] - 2026-08-25
+
+### Added
+- **DB Facade**: `statement()`, `select()`, `selectOne()`, `insert()`, `update()`, `delete()`, `transaction()`.
+- **SoftDeletes Trait**: `deleted_at` auto-management, `withTrashed()`, `onlyTrashed()`, `restore()`, `forceDelete()`.
+- **Model Lifecycle Events**: `creating`, `created`, `updating`, `updated`, `deleting`, `deleted` hooks.
+- **Named Route URLs**: `route('name', ['id' => 1])` global helper with parameter substitution.
+- **ThrottleRequests Middleware**: Token-bucket rate limiter with `429 Too Many Requests` response.
+- **CheckForMaintenanceMode Middleware**: `storage/framework/.down` status + bypass `?secret=`.
+- **Complete Auth Scaffold**: `php veldora make:auth` generates full auth layer with native `.veldora.php` views.
+- **PasswordBroker**: HMAC token-based password reset with expiry validation.
+- **Console Polyfill**: Zero-dependency Symfony\Console shim (`src/Console/Polyfill.php`).
+- **New UI Components**: `footer`, `rating`, `switch`, `pagination`, `skeleton`, `empty`, `divider`, `drawer`, `popover`, `confirm`, `datepicker`, `fileupload`, `combobox`, `inputgroup`, `stat`, `datatable`, `timeline`, `stepper`, `sidebar`, `container` (41+ total components).
+
+---
+
 ## [0.4.0] - 2026-08-23
 
 ### Added
