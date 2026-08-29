@@ -80,14 +80,21 @@ npx create-veldora-app --version
 
 ---
 
-### Method B — Composer Installation
+### Method B — Composer Installation (Standard PHP Workflow)
 
 If you prefer using Composer without Node.js:
 
 ```bash
+# Create a new project via Composer
 composer create-project veldora/veldora my-app
 cd my-app
-cp .env.example .env
+
+# Generate application key & run database migrations
+php veldora key:generate
+php veldora migrate
+
+# Start the dev server
+php veldora serve
 ```
 
 ---

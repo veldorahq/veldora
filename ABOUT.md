@@ -27,8 +27,8 @@ Veldora was created with a simple yet uncompromising philosophy:
 The Veldora ecosystem is split into focused, modular packages:
 
 - **[Veldora Core](https://github.com/veldorahq/veldora)**: Application container, HTTP routing pipeline, query builder, and template compiler.
-- **[create-veldora-app](https://github.com/veldorahq/create-veldora-app)**: Fast project scaffolder available via `npx create-veldora-app`.
-- **[Veldora UI](https://github.com/veldorahq/veldora-ui)**: 39 pre-styled, accessible UI components with zero runtime JS required.
+- **[create-veldora-app](https://github.com/veldorahq/create-veldora-app)**: Fast project scaffolder available via `npx create-veldora-app` and `composer create-project`.
+- **[Veldora UI](https://github.com/veldorahq/veldora-ui)**: 41+ pre-styled, accessible UI components with zero runtime JS required.
 - **[Veldora VS Code](https://github.com/veldorahq/veldora-vscode)**: Official IDE extension featuring syntax highlighting, IntelliSense snippets, and built-in file icons.
 - **[Documentation](https://github.com/veldorahq/docs)**: Live interactive documentation website and component previewer at [veldora.modrao.com](https://veldora.modrao.com).
 

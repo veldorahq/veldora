@@ -6,11 +6,12 @@
 
 **A modern PHP framework you actually own.**
 
-Built-in zero-config CLI • 41+ Built-in Commands • Blade-like Template Engine • 21 Accessible UI Components • Modern MVC Architecture
+Built-in zero-config CLI • 41+ Built-in Commands • Blade-like Template Engine • 41+ Accessible UI Components • Modern MVC Architecture
 
 <br>
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://php.net)
+[![Packagist Version](https://img.shields.io/packagist/v/veldora/framework?style=flat-square&logo=packagist&logoColor=white&color=F28D1A)](https://packagist.org/packages/veldora/framework)
 [![npm version](https://img.shields.io/npm/v/create-veldora-app?style=flat-square&logo=npm&color=CB3837)](https://www.npmjs.com/package/create-veldora-app)
 [![VS Code Extension](https://img.shields.io/badge/VS_Code-v0.5.4-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)](https://github.com/veldorahq/veldora-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6?style=flat-square)](LICENSE)
@@ -32,16 +33,22 @@ Built-in zero-config CLI • 41+ Built-in Commands • Blade-like Template Engin
 
 ## 🚀 Quick Start
 
-### 1. Scaffold a New Project
+You can create a new Veldora project using either **Composer** or **npx**:
+
+### Option 1 — via Composer (Recommended for PHP workflows)
+```bash
+composer create-project veldora/veldora my-app
+cd my-app
+php veldora serve
+```
+
+### Option 2 — via npx / npm (Interactive Scaffolder)
 ```bash
 npx create-veldora-app my-app
 cd my-app
-```
-
-### 2. Start the Development Server
-```bash
 php veldora serve
 ```
+
 Your application will be live at `http://localhost:8000`.
 
 ---
