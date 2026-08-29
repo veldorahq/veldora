@@ -1,0 +1,44 @@
+name: 📖 Documentation Issue
+description: Report missing, unclear, or incorrect documentation
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found something wrong or missing in the docs? Let us know!
+
+  - type: input
+    id: url
+    attributes:
+      label: Documentation URL or Section
+      placeholder: e.g. https://veldora.modrao.com/docs/routing or "CLI Commands section"
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue Type
+      options:
+        - "Missing documentation"
+        - "Incorrect / outdated information"
+        - "Typo or grammar"
+        - "Code example doesn't work"
+        - "Unclear explanation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Issue
+      description: What is wrong or missing?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How should it be corrected or improved?

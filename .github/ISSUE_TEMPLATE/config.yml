@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/veldorahq/veldora/discussions
+    about: Ask questions and discuss Veldora with the community.
+  - name: 📖 Documentation
+    url: https://veldora.modrao.com
+    about: Read the official Veldora documentation.
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/veldorahq/veldora/security/advisories/new
+    about: Please report security vulnerabilities privately, not as public issues.

@@ -1,0 +1,29 @@
+# CODEOWNERS — defines who reviews changes in each area
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback — project maintainer reviews everything
+*                                   @modrao
+
+# Framework Core
+/veldora-core/                      @modrao
+/veldora-core/src/Foundation/       @modrao
+/veldora-core/src/Auth/             @modrao
+/veldora-core/src/Database/         @modrao
+
+# UI Components
+/veldora-ui/                        @modrao
+/veldora-ui/css/                    @modrao
+/veldora-ui/src/Registry/           @modrao
+
+# CLI Scaffolder
+/create-veldora-app/                @modrao
+/create-veldora-app/src/            @modrao
+/create-veldora-app/template/       @modrao
+
+# Documentation
+/docs-site/                         @modrao
+
+# Community & Governance
+/.github/                           @modrao
+/SECURITY.md                        @modrao
+/CODE_OF_CONDUCT.md                 @modrao

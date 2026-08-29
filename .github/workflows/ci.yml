@@ -1,0 +1,97 @@
+name: CI — Run Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'veldora-core/**'
+      - 'veldora-ui/**'
+      - 'composer.json'
+      - 'composer.lock'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'veldora-core/**'
+      - 'veldora-ui/**'
+      - 'composer.json'
+      - 'composer.lock'
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_sqlite, json, xml, curl
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPUnit tests
+        run: ./vendor/bin/phpunit --configuration phpunit.xml
+
+  lint:
+    name: Code Style (PHP-CS-Fixer)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHP-CS-Fixer (dry-run)
+        run: ./vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+        continue-on-error: true
+
+  static-analysis:
+    name: Static Analysis (PHPStan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --no-progress
+        continue-on-error: true

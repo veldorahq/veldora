@@ -1,0 +1,39 @@
+# Labels for auto-labeling pull requests by changed files
+# Used by .github/workflows/pr-check.yml (actions/labeler)
+
+"framework:core":
+  - changed-files:
+    - any-glob-to-any-file: 'veldora-core/**'
+
+"framework:ui":
+  - changed-files:
+    - any-glob-to-any-file: 'veldora-ui/**'
+
+"framework:cli":
+  - changed-files:
+    - any-glob-to-any-file: 'create-veldora-app/**'
+
+"docs":
+  - changed-files:
+    - any-glob-to-any-file: 'docs-site/**'
+    - any-glob-to-any-file: '**/*.md'
+
+"dependencies":
+  - changed-files:
+    - any-glob-to-any-file: 'composer.json'
+    - any-glob-to-any-file: 'composer.lock'
+    - any-glob-to-any-file: '**/package.json'
+    - any-glob-to-any-file: '**/package-lock.json'
+
+"ci":
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+
+"tests":
+  - changed-files:
+    - any-glob-to-any-file: '**/tests/**'
+    - any-glob-to-any-file: 'phpunit.xml'
+
+"css/styles":
+  - changed-files:
+    - any-glob-to-any-file: '**/*.css'

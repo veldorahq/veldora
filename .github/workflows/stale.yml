@@ -1,0 +1,48 @@
+name: Stale Issues & PRs
+
+on:
+  schedule:
+    # Runs every day at 01:00 UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Mark and close stale issues/PRs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Issues
+          days-before-issue-stale: 30
+          days-before-issue-close: 14
+          stale-issue-label: 'stale'
+          stale-issue-message: >
+            This issue has been automatically marked as stale because it has not had
+            any activity for **30 days**. It will be closed in 14 days if no further
+            activity occurs. If this is still relevant, please comment or add a label.
+
+            Thank you for contributing to Veldora! 🎉
+          close-issue-message: >
+            This issue has been closed due to inactivity. Feel free to reopen it
+            if the problem persists or the feature is still needed.
+          exempt-issue-labels: 'pinned,security,bug,in-progress'
+
+          # Pull Requests
+          days-before-pr-stale: 21
+          days-before-pr-close: 14
+          stale-pr-label: 'stale'
+          stale-pr-message: >
+            This pull request has been automatically marked as stale because it has not
+            had any activity for **21 days**. It will be closed in 14 days if no further
+            activity occurs. Please push new commits or comment to keep it alive.
+          close-pr-message: >
+            This pull request has been closed due to inactivity. Feel free to reopen it
+            if you'd like to continue.
+          exempt-pr-labels: 'pinned,in-progress,do-not-close'
