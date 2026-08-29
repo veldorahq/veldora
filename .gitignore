@@ -19,34 +19,29 @@
 *.vsix
 
 # Cache and Storage
-/storage/
+/storage/framework/cache/*
+/storage/framework/views/*
+/storage/framework/sessions/*
+/storage/logs/*
+!/storage/app/.gitkeep
+!/storage/framework/cache/.gitkeep
+!/storage/framework/views/.gitkeep
+!/storage/framework/sessions/.gitkeep
+!/storage/logs/.gitkeep
+
+# Database files
 /database/*.sqlite
 /database/*.sqlite-journal
+!/database/.gitkeep
 
 # System files
 *.log
 .DS_Store
 Thumbs.db
 
-# -------------------------------------------------------
-# Monorepo root: ignore starter-app dirs that belong in
-# create-veldora-app/template, not in the monorepo root
-# -------------------------------------------------------
-/src/
-/app/
-/public/
-/resources/
-/routes/
-/config/
-/bootstrap/
-/database/
-/default-favicon/
-/docs.md
-/package.json
-/phpstan.neon
-/phpunit.xml
-/ARCHITECTURE.md
-/ABOUT.md
-/assets/
-/veldora
-/composer.lock
+# Sibling ecosystem directories (tracked in their own standalone repos)
+/veldora-core/
+/veldora-ui/
+/create-veldora-app/
+/docs-site/
+/veldora-vscode/

@@ -1,0 +1,14 @@
+{
+  "name": "veldora-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "php veldora serve",
+    "serve": "php veldora serve",
+    "migrate": "php veldora migrate"
+  },
+  "keywords": ["veldora", "php"],
+  "author": "",
+  "license": "MIT"
+}

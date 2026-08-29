@@ -1,35 +1,37 @@
 {
     "name": "veldora/veldora",
     "version": "0.5.2",
-    "description": "The Veldora PHP Framework Monorepo",
+    "description": "The Veldora PHP Framework Starter Application",
+    "keywords": ["framework", "veldora", "php", "starter", "template"],
     "license": "MIT",
     "type": "project",
     "require": {
-        "php": "^8.2 || ^8.3",
-        "psr/container": "^2.0"
-    },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.59",
-        "phpstan/phpstan": "^1.11",
-        "phpunit/phpunit": "^10.5"
+        "php": "^8.2 || ^8.3"
     },
     "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Veldora\\Framework\\": "src/Framework/",
+            "Veldora\\UI\\": "src/UI/"
+        },
         "files": [
-            "veldora-core/src/helpers.php"
-        ],
-        "psr-4": {
-            "Veldora\\Framework\\": "veldora-core/src/",
-            "Veldora\\Installer\\": "create-veldora-app/src/",
-            "Veldora\\UI\\": "veldora-ui/src/"
-        }
+            "src/Framework/helpers.php",
+            "bootstrap/Polyfill.php"
+        ]
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Veldora\\Framework\\Tests\\": "veldora-core/tests/"
-        }
+    "scripts": {
+        "post-create-project-cmd": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php veldora key:generate"
+        ],
+        "serve": "php veldora serve",
+        "migrate": "php veldora migrate"
     },
     "config": {
+        "preferred-install": "dist",
         "sort-packages": true,
-        "process-timeout": 1800
-    }
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
