@@ -28,6 +28,8 @@
 !/storage/framework/views/.gitkeep
 !/storage/framework/sessions/.gitkeep
 !/storage/logs/.gitkeep
+/storage/*.sqlite
+/storage/*.sqlite-journal
 
 # Database files
 /database/*.sqlite
@@ -39,9 +41,23 @@
 .DS_Store
 Thumbs.db
 
-# Sibling ecosystem directories (tracked in their own standalone repos)
+# Sibling ecosystem repositories
 /veldora-core/
 /veldora-ui/
 /create-veldora-app/
 /docs-site/
 /veldora-vscode/
+
+# Internal docs & planning assets (ignored in public starter app)
+/ARCHITECTURE.md
+/ABOUT.md
+/docs.md
+/assets/
+/default-favicon/
+/phpstan.neon
+/phpunit.xml
+/CHANGELOG.md
+/CODE_OF_CONDUCT.md
+/CONTRIBUTING.md
+/SECURITY.md
+/composer.lock
