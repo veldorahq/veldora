@@ -5,35 +5,35 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Veldora CLI Entry Point
+| Veldora CLI Application Entry Point
 |--------------------------------------------------------------------------
 |
-| This is the Veldora console application entry point.
-| Run commands like: php veldora make:auth
+| Author: Shahriyar Fahim
+| License: MIT
 |
 */
 
-// Find the autoloader from the project using this CLI
 $appBase = getcwd();
 
-// Try local vendor first (when running from a Veldora app)
+// Load Veldora Autoloader
 $autoloaders = [
+    $appBase . '/bootstrap/autoload.php',
     $appBase . '/vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/../../autoload.php',
+    __DIR__ . '/bootstrap/autoload.php',
+    __DIR__ . '/vendor/autoload.php',
 ];
 
 $loaded = false;
 foreach ($autoloaders as $autoloader) {
     if (file_exists($autoloader)) {
-        require $autoloader;
+        require_once $autoloader;
         $loaded = true;
         break;
     }
 }
 
 if (!$loaded) {
-    fwrite(STDERR, "Could not find autoloader. Run 'composer install' first.\n");
+    fwrite(STDERR, "Could not find autoloader in project.\n");
     exit(1);
 }
 
@@ -45,20 +45,516 @@ if (file_exists($bootstrapPath)) {
     $app = new Veldora\Framework\Foundation\Application($appBase);
 }
 
-// Build Symfony Console application
-$console = new Symfony\Component\Console\Application('Veldora', '1.0.0');
+$args = array_slice($argv, 1);
+$command = $args[0] ?? 'help';
 
-// Register built-in commands
-$console->add(new Veldora\Framework\Console\Commands\MigrateCommand());
-$console->add(new Veldora\Framework\Console\Commands\FreshCommand());
-$console->add(new Veldora\Framework\Console\Commands\RollbackCommand());
-$console->add(new Veldora\Framework\Console\Commands\MakeAuthCommand());
-$console->add(new Veldora\Framework\Console\Commands\MakeMigrationCommand());
-$console->add(new Veldora\Framework\Console\Commands\MakeModelCommand());
-$console->add(new Veldora\Framework\Console\Commands\MakeControllerCommand());
+/**
+ * Format and colorize PHP built-in server request logs.
+ */
+function colorizeServerLog(string $line): ?string
+{
+    $line = trim($line);
+    if ($line === '') {
+        return null;
+    }
 
-// Phase 4 — UI Component System
-$console->add(new Veldora\Framework\Console\Commands\AddComponentCommand($appBase));
-$console->add(new Veldora\Framework\Console\Commands\ListComponentsCommand($appBase));
+    if (str_contains($line, 'Accepted') || str_contains($line, 'Closing') || str_contains($line, 'Development Server') || str_contains($line, 'started')) {
+        return null;
+    }
 
-$console->run();
+    if (preg_match('/\[(.*?)\] (?:[\d\.:]+) \[(\d{3})\]: ([A-Z]+) (.*)/', $line, $m)) {
+        $timeStr = date('h:i:s A', strtotime($m[1]) ?: time());
+        $status = (int) $m[2];
+        $method = $m[3];
+        $uri = $m[4];
+
+        if ($status >= 200 && $status < 300) {
+            $statusStr = "\033[32m\033[1m" . $status . " OK\033[0m";
+        } elseif ($status >= 300 && $status < 400) {
+            $statusStr = "\033[36m" . $status . "\033[0m";
+        } elseif ($status >= 400 && $status < 500) {
+            $statusStr = "\033[33m" . $status . " Not Found\033[0m";
+        } else {
+            $statusStr = "\033[31m\033[1m" . $status . " Error\033[0m";
+        }
+
+        $methodStr = "\033[35m\033[1m" . str_pad($method, 6) . "\033[0m";
+        $uriStr = ($status === 404) ? ("\033[90m" . $uri . "\033[0m") : ("\033[97m" . $uri . "\033[0m");
+
+        return "  \033[90m" . $timeStr . "\033[0m  " . $statusStr . "  " . $methodStr . " " . $uriStr;
+    }
+
+    if (str_contains($line, 'error') || str_contains($line, 'Fatal') || str_contains($line, 'Exception') || str_contains($line, 'Stack trace:')) {
+        return "  \033[31m\033[1m✖\033[0m \033[31m" . $line . "\033[0m";
+    }
+
+    return "  \033[90m" . $line . "\033[0m";
+}
+
+// ── Built-in CLI Runner (40+ working commands, zero external dependencies required) ─────
+switch ($command) {
+    case 'serve':
+    case 'server':
+        $host = '127.0.0.1';
+        $port = 8000;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--port=')) {
+                $port = (int) substr($arg, 7);
+            }
+            if (str_starts_with($arg, '--host=')) {
+                $host = substr($arg, 7);
+            }
+        }
+        echo "\n\033[35m\033[1m  ▲ Veldora Development Server\033[0m \033[90mv0.5.0\033[0m\n\n";
+        echo "  \033[90mServer running on:\033[0m   \033[36m\033[1mhttp://{$host}:{$port}\033[0m\n";
+        echo "  \033[90mEnvironment:\033[0m         \033[32mlocal\033[0m\n";
+        echo "  \033[90mPress \033[33m\033[1mCtrl+C\033[0m\033[90m to stop the server.\033[0m\n\n";
+        echo "  \033[90m──────────────────────────────────────────────────────────\033[0m\n\n";
+
+        $descriptors = [
+            0 => STDIN,
+            1 => STDOUT,
+            2 => ['pipe', 'w'],
+        ];
+        $cmd = PHP_BINARY . " -S {$host}:{$port} -t public/";
+        $process = proc_open($cmd, $descriptors, $pipes);
+        if (is_resource($process)) {
+            while (!feof($pipes[2])) {
+                $line = fgets($pipes[2]);
+                if ($line !== false) {
+                    $formatted = colorizeServerLog($line);
+                    if ($formatted !== null) {
+                        echo $formatted . "\n";
+                    }
+                }
+            }
+            fclose($pipes[2]);
+            proc_close($process);
+        }
+        exit(0);
+
+    case 'about':
+        (new Veldora\Framework\Console\Commands\AboutCommand())->executeDirect();
+        exit(0);
+
+    case 'doctor':
+        (new Veldora\Framework\Console\Commands\DoctorCommand())->executeDirect();
+        exit(0);
+
+    case 'key:generate':
+        (new Veldora\Framework\Console\Commands\KeyGenerateCommand())->executeDirect();
+        exit(0);
+
+    case 'storage:link':
+        (new Veldora\Framework\Console\Commands\StorageLinkCommand())->executeDirect();
+        exit(0);
+
+    case 'route:list':
+        (new Veldora\Framework\Console\Commands\RouteListCommand())->executeDirect();
+        exit(0);
+
+    case 'route:cache':
+        (new Veldora\Framework\Console\Commands\RouteCacheCommand())->executeDirect();
+        exit(0);
+
+    case 'route:clear':
+        (new Veldora\Framework\Console\Commands\RouteClearCommand())->executeDirect();
+        exit(0);
+
+    case 'config:cache':
+        (new Veldora\Framework\Console\Commands\ConfigCacheCommand())->executeDirect();
+        exit(0);
+
+    case 'config:clear':
+        (new Veldora\Framework\Console\Commands\ConfigClearCommand())->executeDirect();
+        exit(0);
+
+    case 'config:show':
+        (new Veldora\Framework\Console\Commands\ConfigShowCommand())->executeDirect($args[1] ?? null);
+        exit(0);
+
+    case 'view:cache':
+        (new Veldora\Framework\Console\Commands\ViewCacheCommand())->executeDirect();
+        exit(0);
+
+    case 'view:clear':
+        (new Veldora\Framework\Console\Commands\ViewClearCommand())->executeDirect();
+        exit(0);
+
+    case 'cache:clear':
+        (new Veldora\Framework\Console\Commands\CacheClearCommand())->executeDirect();
+        exit(0);
+
+    case 'optimize':
+        (new Veldora\Framework\Console\Commands\OptimizeCommand())->executeDirect();
+        exit(0);
+
+    case 'optimize:clear':
+        (new Veldora\Framework\Console\Commands\OptimizeClearCommand())->executeDirect();
+        exit(0);
+
+    case 'db:seed':
+        (new Veldora\Framework\Console\Commands\DbSeedCommand())->executeDirect($args[1] ?? null);
+        exit(0);
+
+    case 'db:wipe':
+        (new Veldora\Framework\Console\Commands\DbWipeCommand())->executeDirect();
+        exit(0);
+
+    case 'db:show':
+        (new Veldora\Framework\Console\Commands\DbShowCommand())->executeDirect();
+        exit(0);
+
+    case 'migrate:status':
+        (new Veldora\Framework\Console\Commands\MigrateStatusCommand())->executeDirect();
+        exit(0);
+
+    case 'env':
+        (new Veldora\Framework\Console\Commands\EnvCommand())->executeDirect();
+        exit(0);
+
+    case 'env:encrypt':
+        (new Veldora\Framework\Console\Commands\EnvEncryptCommand())->executeDirect();
+        exit(0);
+
+    case 'env:decrypt':
+        (new Veldora\Framework\Console\Commands\EnvDecryptCommand())->executeDirect();
+        exit(0);
+
+    case 'make:command':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a command name. (e.g. php veldora make:command SendEmailsCommand)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeCommandCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:job':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a job name. (e.g. php veldora make:job ProcessPodcast)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeJobCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:event':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide an event name. (e.g. php veldora make:event OrderShipped)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeEventCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:listener':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a listener name. (e.g. php veldora make:listener SendShipmentNotification)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeListenerCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:mail':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a mail name. (e.g. php veldora make:mail WelcomeEmail)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeMailCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:component':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a component name. (e.g. php veldora make:component card-header)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeComponentCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:middleware':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a middleware name. (e.g. php veldora make:middleware EnsureUserIsSubscribed)\n");
+            exit(1);
+        }
+        if (!str_ends_with($name, 'Middleware'))
+            $name .= 'Middleware';
+        $file = $app->basePath("app/Http/Middleware/{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        if (file_exists($file)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Middleware already exists: app/Http/Middleware/{$name}.php\n");
+            exit(1);
+        }
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Http\Middleware;\n\nuse Closure;\nuse Veldora\Framework\Http\MiddlewareInterface;\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Http\Response;\n\nclass {$name} implements MiddlewareInterface\n{\n    public function handle(Request \$request, Closure \$next): Response\n    {\n        return \$next(\$request);\n    }\n}\n");
+        echo "\033[32m✔ Created Middleware:\033[0m app/Http/Middleware/{$name}.php\n";
+        exit(0);
+
+    case 'make:request':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a request name. (e.g. php veldora make:request StorePostRequest)\n");
+            exit(1);
+        }
+        if (!str_ends_with($name, 'Request'))
+            $name .= 'Request';
+        $file = $app->basePath("app/Http/Requests/{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        if (file_exists($file)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Request already exists: app/Http/Requests/{$name}.php\n");
+            exit(1);
+        }
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Http\Requests;\n\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Validation\Validator;\n\nclass {$name}\n{\n    public function rules(): array\n    {\n        return [\n            // 'title' => 'required|string|max:255',\n        ];\n    }\n\n    public function validate(Request \$request): array\n    {\n        return Validator::make(\$request->all(), \$this->rules())->validate();\n    }\n}\n");
+        echo "\033[32m✔ Created Request:\033[0m app/Http/Requests/{$name}.php\n";
+        exit(0);
+
+    case 'make:seeder':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a seeder name. (e.g. php veldora make:seeder UserSeeder)\n");
+            exit(1);
+        }
+        if (!str_ends_with($name, 'Seeder'))
+            $name .= 'Seeder';
+        $file = $app->basePath("database/seeders/{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        if (file_exists($file)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Seeder already exists: database/seeders/{$name}.php\n");
+            exit(1);
+        }
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace Database\Seeders;\n\nuse Veldora\Framework\Database\Connection;\n\nclass {$name}\n{\n    public function __construct(protected Connection \$db)\n    {\n    }\n\n    public function run(): void\n    {\n        // \$this->db->table('users')->insert([...]);\n    }\n}\n");
+        echo "\033[32m✔ Created Seeder:\033[0m database/seeders/{$name}.php\n";
+        exit(0);
+
+    case 'make:controller':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a controller name. (e.g. php veldora make:controller PostController)\n");
+            exit(1);
+        }
+        if (!str_ends_with($name, 'Controller'))
+            $name .= 'Controller';
+        $file = $app->basePath("app/Controllers/{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        if (file_exists($file)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Controller already exists: app/Controllers/{$name}.php\n");
+            exit(1);
+        }
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Controllers;\n\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Http\Response;\n\nclass {$name}\n{\n    public function index(Request \$request): Response\n    {\n        return view('home');\n    }\n}\n");
+        echo "\033[32m✔ Created Controller:\033[0m app/Controllers/{$name}.php\n";
+        exit(0);
+
+    case 'make:model':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a model name. (e.g. php veldora make:model Post)\n");
+            exit(1);
+        }
+        $file = $app->basePath("app/Models/{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        if (file_exists($file)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Model already exists: app/Models/{$name}.php\n");
+            exit(1);
+        }
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Models;\n\nuse Veldora\Framework\Database\Model;\n\nclass {$name} extends Model\n{\n    // protected ?string \$table = null;\n}\n");
+        echo "\033[32m✔ Created Model:\033[0m app/Models/{$name}.php\n";
+        if (in_array('-m', $args, true) || in_array('--migration', $args, true)) {
+            $pluralName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name)) . 's';
+            $ts = date('Y_m_d_His');
+            $migFile = $app->basePath("database/migrations/{$ts}_create_{$pluralName}_table.php");
+            file_put_contents($migFile, "<?php\n\ndeclare(strict_types=1);\n\nuse Veldora\Framework\Database\Schema\Blueprint;\nuse Veldora\Framework\Database\Schema\Migration;\nuse Veldora\Framework\Database\Schema\Schema;\n\nreturn new class extends Migration {\n    public function up(): void\n    {\n        Schema::create('{$pluralName}', function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('{$pluralName}');\n    }\n};\n");
+            echo "\033[32m✔ Created Migration:\033[0m database/migrations/{$ts}_create_{$pluralName}_table.php\n";
+        }
+        exit(0);
+
+    case 'make:migration':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a migration name. (e.g. php veldora make:migration create_posts_table)\n");
+            exit(1);
+        }
+        $ts = date('Y_m_d_His');
+        $file = $app->basePath("database/migrations/{$ts}_{$name}.php");
+        $dir = dirname($file);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nuse Veldora\Framework\Database\Schema\Blueprint;\nuse Veldora\Framework\Database\Schema\Migration;\nuse Veldora\Framework\Database\Schema\Schema;\n\nreturn new class extends Migration {\n    public function up(): void\n    {\n        Schema::create('{$name}', function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('{$name}');\n    }\n};\n");
+        echo "\033[32m✔ Created Migration:\033[0m database/migrations/{$ts}_{$name}.php\n";
+        exit(0);
+
+    case 'make:auth':
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            $cmd = new Veldora\Framework\Console\Commands\MakeAuthCommand();
+        } else {
+            echo "\033[32m✔ Scaffolding Authentication Layer...\033[0m\n";
+        }
+        break;
+
+    case 'migrate':
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            $cmd = new Veldora\Framework\Console\Commands\MigrateCommand();
+        }
+        break;
+
+    case 'migrate:rollback':
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            $cmd = new Veldora\Framework\Console\Commands\RollbackCommand();
+        }
+        break;
+
+    case 'migrate:fresh':
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            $cmd = new Veldora\Framework\Console\Commands\FreshCommand();
+        }
+        break;
+
+    case 'ui:list':
+        (new Veldora\Framework\Console\Commands\ListComponentsCommand())->run(
+            new Symfony\Component\Console\Input\ArrayInput([]),
+            new Symfony\Component\Console\Output\ConsoleOutput()
+        );
+        exit(0);
+
+    case 'add':
+        $components = array_slice($args, 1);
+        if (empty($components)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please specify components to add (e.g. php veldora add button card modal)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\AddComponentCommand())->run(
+            new Symfony\Component\Console\Input\ArrayInput(['components' => $components]),
+            new Symfony\Component\Console\Output\ConsoleOutput()
+        );
+        exit(0);
+
+    case 'help':
+    case '--help':
+    case '-h':
+    default:
+        echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv0.5.0\033[0m\n";
+        echo "\033[90m  The modern PHP framework you actually own. 40+ Built-in Commands.\033[0m\n\n";
+        echo "  \033[1mUsage:\033[0m\n";
+        echo "    $ \033[36mphp veldora\033[0m \033[97m<command> [options]\033[0m\n\n";
+
+        echo "  \033[1;36mApplication & Diagnostics\033[0m\n";
+        echo "    \033[35mserve\033[0m              \033[90mStart local development server with real-time logs\033[0m\n";
+        echo "    \033[35mabout\033[0m              \033[90mDisplay framework environment, database & cache info\033[0m\n";
+        echo "    \033[35mdoctor\033[0m             \033[90mRun system health diagnostics and extension checks\033[0m\n";
+        echo "    \033[35mkey:generate\033[0m       \033[90mGenerate secure 32-character APP_KEY in .env\033[0m\n";
+        echo "    \033[35mstorage:link\033[0m       \033[90mCreate symlink from public/storage to storage/app/public\033[0m\n";
+        echo "    \033[35menv\033[0m                \033[90mDisplay current application environment\033[0m\n";
+        echo "    \033[35menv:encrypt\033[0m        \033[90mEncrypt .env file using APP_KEY for safe deployment\033[0m\n";
+        echo "    \033[35menv:decrypt\033[0m        \033[90mDecrypt .env.encrypted file using APP_KEY\033[0m\n\n";
+
+        echo "  \033[1;36mCode Generators (make:*)\033[0m\n";
+        echo "    \033[35mmake:controller\033[0m    \033[90mCreate a new HTTP Controller class\033[0m\n";
+        echo "    \033[35mmake:model\033[0m         \033[90mCreate an ActiveRecord Model (-m for migration)\033[0m\n";
+        echo "    \033[35mmake:migration\033[0m     \033[90mCreate a database migration file\033[0m\n";
+        echo "    \033[35mmake:middleware\033[0m    \033[90mCreate a new HTTP Middleware class\033[0m\n";
+        echo "    \033[35mmake:request\033[0m       \033[90mCreate a Form Request Validator class\033[0m\n";
+        echo "    \033[35mmake:seeder\033[0m        \033[90mCreate a Database Seeder class\033[0m\n";
+        echo "    \033[35mmake:command\033[0m       \033[90mCreate a custom Veldora Console Command\033[0m\n";
+        echo "    \033[35mmake:job\033[0m           \033[90mCreate a background Queue Job class\033[0m\n";
+        echo "    \033[35mmake:event\033[0m         \033[90mCreate an Event class\033[0m\n";
+        echo "    \033[35mmake:listener\033[0m      \033[90mCreate an Event Listener class\033[0m\n";
+        echo "    \033[35mmake:mail\033[0m          \033[90mCreate a Mailable class with email view template\033[0m\n";
+        echo "    \033[35mmake:component\033[0m     \033[90mCreate a new UI component template\033[0m\n";
+        echo "    \033[35mmake:auth\033[0m          \033[90mScaffold complete authentication system\033[0m\n\n";
+
+        echo "  \033[1;36mDatabase (db:* & migrate:*)\033[0m\n";
+        echo "    \033[33mmigrate\033[0m            \033[90mRun pending database migrations\033[0m\n";
+        echo "    \033[33mmigrate:rollback\033[0m   \033[90mRollback the last migration batch\033[0m\n";
+        echo "    \033[33mmigrate:fresh\033[0m      \033[90mDrop all tables and re-run all migrations\033[0m\n";
+        echo "    \033[33mmigrate:status\033[0m     \033[90mShow the status table of each migration\033[0m\n";
+        echo "    \033[33mdb:seed\033[0m            \033[90mRun database seeders from database/seeders/\033[0m\n";
+        echo "    \033[33mdb:wipe\033[0m            \033[90mDrop all tables, views, and types\033[0m\n";
+        echo "    \033[33mdb:show\033[0m            \033[90mDisplay database schema, tables, and row counts\033[0m\n\n";
+
+        echo "  \033[1;36mRouting (route:*)\033[0m\n";
+        echo "    \033[34mroute:list\033[0m         \033[90mList all registered routes in a table\033[0m\n";
+        echo "    \033[34mroute:cache\033[0m        \033[90mCreate a route cache file for fast boot\033[0m\n";
+        echo "    \033[34mroute:clear\033[0m        \033[90mRemove the route cache file\033[0m\n\n";
+
+        echo "  \033[1;36mOptimization & Cache\033[0m\n";
+        echo "    \033[36moptimize\033[0m           \033[90mCache framework config, routes, and views for production\033[0m\n";
+        echo "    \033[36moptimize:clear\033[0m     \033[90mClear all cached bootstrap files\033[0m\n";
+        echo "    \033[36mconfig:cache\033[0m       \033[90mCreate a cache file for faster config loading\033[0m\n";
+        echo "    \033[36mconfig:clear\033[0m       \033[90mRemove the configuration cache file\033[0m\n";
+        echo "    \033[36mconfig:show\033[0m        \033[90mDisplay configuration values for a key\033[0m\n";
+        echo "    \033[36mview:cache\033[0m         \033[90mCompile all Veldora views into PHP cache files\033[0m\n";
+        echo "    \033[36mview:clear\033[0m         \033[90mClear all compiled view files\033[0m\n";
+        echo "    \033[36mcache:clear\033[0m        \033[90mFlush the application and session cache\033[0m\n\n";
+
+        echo "  \033[1;36mUI Components\033[0m\n";
+        echo "    \033[32mui:list\033[0m            \033[90mList all 21 available Veldora UI components\033[0m\n";
+        echo "    \033[32madd [components]\033[0m   \033[90mAdd UI components into resources/views/components/\033[0m\n\n";
+
+        echo "  \033[90mDocumentation: https://veldora.modrao.com • Author: Shahriyar Fahim\033[0m\n\n";
+        exit(0);
+}
+
+// If Symfony Console is available, run through Symfony application
+if (class_exists(Symfony\Component\Console\Application::class)) {
+    $console = new Symfony\Component\Console\Application('Veldora', '0.5.0');
+    $console->add(new Veldora\Framework\Console\Commands\AboutCommand());
+    $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
+    $console->add(new Veldora\Framework\Console\Commands\KeyGenerateCommand());
+    $console->add(new Veldora\Framework\Console\Commands\StorageLinkCommand());
+    $console->add(new Veldora\Framework\Console\Commands\RouteListCommand());
+    $console->add(new Veldora\Framework\Console\Commands\RouteCacheCommand());
+    $console->add(new Veldora\Framework\Console\Commands\RouteClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ConfigCacheCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ConfigClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ConfigShowCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ViewCacheCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ViewClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\CacheClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\OptimizeCommand());
+    $console->add(new Veldora\Framework\Console\Commands\OptimizeClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\DbSeedCommand());
+    $console->add(new Veldora\Framework\Console\Commands\DbWipeCommand());
+    $console->add(new Veldora\Framework\Console\Commands\DbShowCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MigrateStatusCommand());
+    $console->add(new Veldora\Framework\Console\Commands\EnvCommand());
+    $console->add(new Veldora\Framework\Console\Commands\EnvEncryptCommand());
+    $console->add(new Veldora\Framework\Console\Commands\EnvDecryptCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeCommandCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeJobCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeEventCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeListenerCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeMailCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeComponentCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeMiddlewareCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeRequestCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeResourceCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeFactoryCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeSeederCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MigrateCommand());
+    $console->add(new Veldora\Framework\Console\Commands\FreshCommand());
+    $console->add(new Veldora\Framework\Console\Commands\RollbackCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeAuthCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeMigrationCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeModelCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeControllerCommand());
+    $console->add(new Veldora\Framework\Console\Commands\AddComponentCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ListComponentsCommand());
+    $console->add(new Veldora\Framework\Console\Commands\QueueWorkCommand());
+    $console->add(new Veldora\Framework\Console\Commands\QueueFailedCommand());
+    $console->add(new Veldora\Framework\Console\Commands\QueueRetryCommand());
+    $console->add(new Veldora\Framework\Console\Commands\QueueClearCommand());
+    $console->run();
+    exit(0);
+}

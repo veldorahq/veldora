@@ -32,8 +32,8 @@
 /storage/*.sqlite-journal
 
 # Database files
-/database/*.sqlite
 /database/*.sqlite-journal
+!/database/database.sqlite
 !/database/.gitkeep
 
 # System files
