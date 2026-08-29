@@ -1,6 +1,7 @@
 {
     "name": "veldora/veldora",
-    "description": "The Veldora PHP Framework",
+    "version": "0.5.2",
+    "description": "The Veldora PHP Framework Monorepo",
     "license": "MIT",
     "type": "project",
     "require": {

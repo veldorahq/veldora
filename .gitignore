@@ -27,6 +27,8 @@
 !/storage/framework/views/.gitkeep
 !/storage/framework/sessions/.gitkeep
 !/storage/logs/.gitkeep
+/database/*.sqlite
+/database/*.sqlite-journal
 
 # System files
 *.log

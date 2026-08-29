@@ -24,9 +24,10 @@ Built-in zero-config CLI • 41+ Built-in Commands • Blade-like Template Engin
 ## ✦ Why Veldora?
 
 - **Zero Composer Installation Required to Start** — Scaffolding creates an instantly bootable application with built-in PSR-4 autoloader.
-- **You Own Everything** — UI components (`app/components/ui/`) and backend models are copied directly into your codebase. No vendor lock-in.
+- **You Own Everything** — UI components (`resources/views/components/`) and backend models are copied directly into your codebase. No vendor lock-in.
 - **41+ Full-featured CLI Commands** — Built-in generators (`make:*`), database migration manager (`migrate:*`, `db:*`), optimization pipeline (`optimize`), and diagnostics (`doctor`, `about`).
 - **Expressive `.veldora.php` Template Engine** — Blade-inspired syntax (`{{ }}`, `{!! !!}`, `@if`, `@foreach`, `<x-component>`) with pre-compiled view caching.
+- **Multi-Aesthetic Design System** — Built-in Skeuomorphic 3D, Flat Minimalist 2D, Neumorphic Soft UI, and Glassmorphic aesthetics.
 - **Production-Ready Exception & Diagnostics** — Ignition-style dark error screens with interactive code viewer, error-line highlighter, and one-click stack trace copy.
 
 ---
@@ -89,14 +90,15 @@ php veldora optimize:clear           # Clear all framework caches
 Copy pre-styled, accessible UI components directly into `resources/views/components/`:
 
 ```bash
-php veldora add button card modal input badge alert tabs
+php veldora add button card modal input badge alert tabs radio checkbox switch sidebar
 ```
 
 Use them seamlessly in any template:
 ```html
 <x-card title="Welcome to Veldora">
     <p>Build fast, beautiful PHP apps with zero hassle.</p>
-    <x-button variant="primary">Get Started</x-button>
+    <x-radio variant="skeuomorphic" name="plan" value="pro" label="Pro Developer ($29/mo)" :checked="true" />
+    <x-button variant="skeuomorphic">Get Started</x-button>
 </x-card>
 ```
 
@@ -118,4 +120,4 @@ Use them seamlessly in any template:
 
 - **Author**: Shahriyar Fahim
 - **License**: [MIT](LICENSE)
-- **Website**: [https://veldora.modrao.com](https://veldora.modrao.com) *(temporary — permanent domain coming soon)*
+- **Website**: [https://veldora.modrao.com](https://veldora.modrao.com)
