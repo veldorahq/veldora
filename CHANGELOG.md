@@ -5,6 +5,12 @@ All notable changes to the **Veldora PHP Framework** will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-08-30
+
+### Fixed
+- **Clean Starter Skeleton**: Streamlined starter application package distribution for Composer `create-project` and npm scaffolder.
+- **Component Registry**: Synchronized all multi-aesthetic UI components and styles into starter template.
+
 ---
 
 ## [0.5.2] - 2026-08-30

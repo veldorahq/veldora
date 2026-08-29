@@ -1,6 +1,6 @@
 {
     "name": "veldora/veldora",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "description": "The Veldora PHP Framework Starter Application",
     "keywords": ["framework", "veldora", "php", "starter", "template"],
     "license": "MIT",
