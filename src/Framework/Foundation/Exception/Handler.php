@@ -922,7 +922,7 @@ HTML;
             </div>
             <div class="info-row">
                 <span class="info-label">Framework</span>
-                <span class="info-val">Veldora v0.5.0</span>
+                <span class="info-val">Veldora v<?= \Veldora\Framework\Foundation\Application::VERSION ?></span>
             </div>
             <div class="info-row">
                 <span class="info-label">PHP</span>
