@@ -1,13 +1,13 @@
 # Veldora Framework Documentation
 
 > **Veldora** — _A PHP framework you actually own._
-> Modern PHP 8.2+ MVC architecture, expressive routing, Blade-inspired templates, guard-based authentication, 21 UI components, queues, mail, events, cache, storage, and zero framework lock-in.
+> Modern PHP 8.2+ MVC architecture, expressive routing, Blade-inspired templates, guard-based authentication, 41+ UI components, queues, mail, events, cache, storage, and zero framework lock-in.
 
 ---
 
 ## 1. Getting Started & Installation
 
-Veldora provides two first-class installation methods: an **interactive npm / npx installer** (which sets up your app with zero manual configuration) and a **Composer package creator** (for standard PHP environments).
+Veldora provides two first-class installation methods: **Composer** (standard for PHP workflows) and **npx / npm** (an interactive zero-config scaffolder).
 
 ### System Requirements
 
@@ -18,14 +18,41 @@ Make sure your machine or server meets the following requirements:
 | **PHP** | 8.2 or higher | Strict typing, readonly classes, constructor promotion |
 | **PDO Extension** | Enabled | Required for all database drivers |
 | **SQLite Extension** | Enabled | Used by default for instant local setup |
-| **Composer** | 2.0+ | Dependency manager |
-| **Node.js** | 18+ | (Optional) Only required for the `npx` / `npm` installer |
+| **Composer** | 2.0+ | Standard PHP package manager |
+| **Node.js** | 18+ | (Optional) Only required if using `npx` / `npm` |
 
 ---
 
-### Method A — Interactive npm / npx Installer (Recommended)
+### Option 1 — Composer Installation (Recommended)
 
-The official `create-veldora-app` package allows you to scaffold a production-ready application in seconds.
+You can create a fresh, self-contained Veldora project in seconds using Composer:
+
+```bash
+composer create-project veldora/veldora my-app
+cd my-app
+php veldora serve
+```
+
+```terminal
+Creating a "veldora/veldora" project at "./my-app"
+Installing veldora/veldora (v0.5.1)
+  - Downloading veldora/veldora (v0.5.1)
+  - Installing veldora/veldora (v0.5.1): Extracting archive
+Created project in ./my-app
+Generating optimized autoload files
+> @php -r "file_exists('.env') || copy('.env.example', '.env');"
+> @php veldora key:generate
+
+✔ Application key set successfully!
+
+🎉 Success! Created my-app at ./my-app
+```
+
+---
+
+### Option 2 — Interactive npm / npx Installer
+
+If you prefer using Node.js or an interactive prompt:
 
 ```bash
 # Run instantly with npx (no global install needed):
@@ -37,29 +64,18 @@ veldora new my-app
 ```
 
 ```terminal
-  ▲ Veldora Framework  v0.5.0
+  ▲ Veldora Framework  v0.5.1
   The modern PHP framework you actually own.
 
   ? What is your project named? (my-veldora-app): my-blog
 
-  Creating a new Veldora app in /home/user/my-blog...
+  Creating a new Veldora app in ./my-blog...
 
-  Installing dependencies via Composer... ✔ Done
-  Generating secure APP_KEY... ✔ Done
-  Configuring storage and logs directory... ✔ Done
+  ✔ Configured project skeleton
+  ✔ Generated secure APP_KEY
+  ✔ Configured storage and logs directory
 
-  🎉 Success! Created my-blog at /home/user/my-blog
-
-  Inside your new project, you can run:
-
-    php veldora serve
-    Starts local dev server at http://localhost:8000
-
-    php veldora make:auth
-    Scaffolds complete login, registration, and dashboard
-
-    php veldora add button input modal tabs
-    Copies UI components into resources/views/components/
+  🎉 Success! Created my-blog at ./my-blog
 ```
 
 #### npm CLI Options
@@ -76,25 +92,6 @@ npx create-veldora-app --help
 
 # Check installed version
 npx create-veldora-app --version
-```
-
----
-
-### Method B — Composer Installation (Standard PHP Workflow)
-
-If you prefer using Composer without Node.js:
-
-```bash
-# Create a new project via Composer
-composer create-project veldora/veldora my-app
-cd my-app
-
-# Generate application key & run database migrations
-php veldora key:generate
-php veldora migrate
-
-# Start the dev server
-php veldora serve
 ```
 
 ---

@@ -9,6 +9,7 @@
 
 # Playground & Scratch
 /playground/
+/scratch/
 *.ps1
 *.bat
 
@@ -20,9 +21,11 @@
 # Cache and Storage
 /storage/framework/cache/*
 /storage/framework/views/*
+/storage/framework/sessions/*
 /storage/logs/*
 !/storage/framework/cache/.gitkeep
 !/storage/framework/views/.gitkeep
+!/storage/framework/sessions/.gitkeep
 !/storage/logs/.gitkeep
 
 # System files
