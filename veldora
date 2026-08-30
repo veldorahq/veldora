@@ -32,8 +32,8 @@ foreach ($autoloaders as $autoloader) {
     }
 }
 
-if (!$loaded) {
-    fwrite(STDERR, "Could not find autoloader in project.\n");
+if (!$loaded || !class_exists(\Veldora\Framework\Foundation\Application::class)) {
+    fwrite(STDERR, "\n\033[31mError:\033[0m Composer dependencies are not installed.\n  Please run: \033[36mcomposer install\033[0m\n\n");
     exit(1);
 }
 
