@@ -13,7 +13,7 @@ use Veldora\Framework\Session\FileDriver;
 
 final class Application extends Container
 {
-    public const VERSION = '0.5.5';
+    public const VERSION = '0.5.6';
 
     /**
      * The static instance of the application.
