@@ -55,5 +55,3 @@ Thumbs.db
 /assets/
 /default-favicon/
 /phpstan.neon
-/phpunit.xml
-/composer.lock
