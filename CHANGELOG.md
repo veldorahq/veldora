@@ -5,6 +5,18 @@ All notable changes to the **Veldora PHP Framework** will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-08-30
+
+### Added
+- Updated to `veldora/framework` v0.5.7 with 48 fully functional CLI commands (including `down`, `up`, and all `queue:*` commands).
+- Full `executeDirect()` zero-dependency CLI execution on all generator and maintenance commands.
+
+### Fixed
+- `make:migration` and `make:model -m` generate anonymous class migrations for reliable execution.
+- Project skeleton cleanly isolated from internal framework directories.
+
+---
+
 ## [0.5.6] - 2026-08-30
 
 ### Fixed

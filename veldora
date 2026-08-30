@@ -91,7 +91,7 @@ function colorizeServerLog(string $line): ?string
     return "  \033[90m" . $line . "\033[0m";
 }
 
-// ── Built-in CLI Runner (40+ working commands, zero external dependencies required) ─────
+// ── Built-in CLI Runner (48 Working Commands) ──────────────────────────────────
 switch ($command) {
     case 'serve':
     case 'server':
@@ -105,7 +105,7 @@ switch ($command) {
                 $host = substr($arg, 7);
             }
         }
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.5';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
         echo "\n\033[35m\033[1m  ▲ Veldora Development Server\033[0m \033[90mv{$cliVersion}\033[0m\n\n";
         echo "  \033[90mServer running on:\033[0m   \033[36m\033[1mhttp://{$host}:{$port}\033[0m\n";
         echo "  \033[90mEnvironment:\033[0m         \033[32mlocal\033[0m\n";
@@ -148,6 +148,20 @@ switch ($command) {
 
     case 'storage:link':
         (new Veldora\Framework\Console\Commands\StorageLinkCommand())->executeDirect();
+        exit(0);
+
+    case 'down':
+        $secret = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--secret=')) {
+                $secret = substr($arg, 9);
+            }
+        }
+        (new Veldora\Framework\Console\Commands\DownCommand())->executeDirect($secret);
+        exit(0);
+
+    case 'up':
+        (new Veldora\Framework\Console\Commands\UpCommand())->executeDirect();
         exit(0);
 
     case 'route:list':
@@ -204,6 +218,18 @@ switch ($command) {
 
     case 'db:show':
         (new Veldora\Framework\Console\Commands\DbShowCommand())->executeDirect();
+        exit(0);
+
+    case 'migrate':
+        (new Veldora\Framework\Console\Commands\MigrateCommand())->executeDirect();
+        exit(0);
+
+    case 'migrate:rollback':
+        (new Veldora\Framework\Console\Commands\RollbackCommand())->executeDirect();
+        exit(0);
+
+    case 'migrate:fresh':
+        (new Veldora\Framework\Console\Commands\FreshCommand())->executeDirect();
         exit(0);
 
     case 'migrate:status':
@@ -282,18 +308,7 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a middleware name. (e.g. php veldora make:middleware EnsureUserIsSubscribed)\n");
             exit(1);
         }
-        if (!str_ends_with($name, 'Middleware'))
-            $name .= 'Middleware';
-        $file = $app->basePath("app/Http/Middleware/{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        if (file_exists($file)) {
-            fwrite(STDERR, "\033[31mError:\033[0m Middleware already exists: app/Http/Middleware/{$name}.php\n");
-            exit(1);
-        }
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Http\Middleware;\n\nuse Closure;\nuse Veldora\Framework\Http\MiddlewareInterface;\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Http\Response;\n\nclass {$name} implements MiddlewareInterface\n{\n    public function handle(Request \$request, Closure \$next): Response\n    {\n        return \$next(\$request);\n    }\n}\n");
-        echo "\033[32m✔ Created Middleware:\033[0m app/Http/Middleware/{$name}.php\n";
+        (new Veldora\Framework\Console\Commands\MakeMiddlewareCommand())->executeDirect($name);
         exit(0);
 
     case 'make:request':
@@ -302,18 +317,31 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a request name. (e.g. php veldora make:request StorePostRequest)\n");
             exit(1);
         }
-        if (!str_ends_with($name, 'Request'))
-            $name .= 'Request';
-        $file = $app->basePath("app/Http/Requests/{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        if (file_exists($file)) {
-            fwrite(STDERR, "\033[31mError:\033[0m Request already exists: app/Http/Requests/{$name}.php\n");
+        (new Veldora\Framework\Console\Commands\MakeRequestCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:resource':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a resource name. (e.g. php veldora make:resource UserResource)\n");
             exit(1);
         }
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Http\Requests;\n\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Validation\Validator;\n\nclass {$name}\n{\n    public function rules(): array\n    {\n        return [\n            // 'title' => 'required|string|max:255',\n        ];\n    }\n\n    public function validate(Request \$request): array\n    {\n        return Validator::make(\$request->all(), \$this->rules())->validate();\n    }\n}\n");
-        echo "\033[32m✔ Created Request:\033[0m app/Http/Requests/{$name}.php\n";
+        (new Veldora\Framework\Console\Commands\MakeResourceCommand())->executeDirect($name);
+        exit(0);
+
+    case 'make:factory':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a factory name. (e.g. php veldora make:factory UserFactory)\n");
+            exit(1);
+        }
+        $model = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--model=')) {
+                $model = substr($arg, 8);
+            }
+        }
+        (new Veldora\Framework\Console\Commands\MakeFactoryCommand())->executeDirect($name, $model);
         exit(0);
 
     case 'make:seeder':
@@ -322,18 +350,7 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a seeder name. (e.g. php veldora make:seeder UserSeeder)\n");
             exit(1);
         }
-        if (!str_ends_with($name, 'Seeder'))
-            $name .= 'Seeder';
-        $file = $app->basePath("database/seeders/{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        if (file_exists($file)) {
-            fwrite(STDERR, "\033[31mError:\033[0m Seeder already exists: database/seeders/{$name}.php\n");
-            exit(1);
-        }
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace Database\Seeders;\n\nuse Veldora\Framework\Database\Connection;\n\nclass {$name}\n{\n    public function __construct(protected Connection \$db)\n    {\n    }\n\n    public function run(): void\n    {\n        // \$this->db->table('users')->insert([...]);\n    }\n}\n");
-        echo "\033[32m✔ Created Seeder:\033[0m database/seeders/{$name}.php\n";
+        (new Veldora\Framework\Console\Commands\MakeSeederCommand())->executeDirect($name);
         exit(0);
 
     case 'make:controller':
@@ -342,18 +359,7 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a controller name. (e.g. php veldora make:controller PostController)\n");
             exit(1);
         }
-        if (!str_ends_with($name, 'Controller'))
-            $name .= 'Controller';
-        $file = $app->basePath("app/Controllers/{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        if (file_exists($file)) {
-            fwrite(STDERR, "\033[31mError:\033[0m Controller already exists: app/Controllers/{$name}.php\n");
-            exit(1);
-        }
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Controllers;\n\nuse Veldora\Framework\Http\Request;\nuse Veldora\Framework\Http\Response;\n\nclass {$name}\n{\n    public function index(Request \$request): Response\n    {\n        return view('home');\n    }\n}\n");
-        echo "\033[32m✔ Created Controller:\033[0m app/Controllers/{$name}.php\n";
+        (new Veldora\Framework\Console\Commands\MakeControllerCommand())->executeDirect($name);
         exit(0);
 
     case 'make:model':
@@ -362,23 +368,8 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a model name. (e.g. php veldora make:model Post)\n");
             exit(1);
         }
-        $file = $app->basePath("app/Models/{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        if (file_exists($file)) {
-            fwrite(STDERR, "\033[31mError:\033[0m Model already exists: app/Models/{$name}.php\n");
-            exit(1);
-        }
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\Models;\n\nuse Veldora\Framework\Database\Model;\n\nclass {$name} extends Model\n{\n    // protected ?string \$table = null;\n}\n");
-        echo "\033[32m✔ Created Model:\033[0m app/Models/{$name}.php\n";
-        if (in_array('-m', $args, true) || in_array('--migration', $args, true)) {
-            $pluralName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name)) . 's';
-            $ts = date('Y_m_d_His');
-            $migFile = $app->basePath("database/migrations/{$ts}_create_{$pluralName}_table.php");
-            file_put_contents($migFile, "<?php\n\ndeclare(strict_types=1);\n\nuse Veldora\Framework\Database\Schema\Blueprint;\nuse Veldora\Framework\Database\Schema\Migration;\nuse Veldora\Framework\Database\Schema\Schema;\n\nreturn new class extends Migration {\n    public function up(): void\n    {\n        Schema::create('{$pluralName}', function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('{$pluralName}');\n    }\n};\n");
-            echo "\033[32m✔ Created Migration:\033[0m database/migrations/{$ts}_create_{$pluralName}_table.php\n";
-        }
+        $withMigration = in_array('-m', $args, true) || in_array('--migration', $args, true);
+        (new Veldora\Framework\Console\Commands\MakeModelCommand())->executeDirect($name, $withMigration);
         exit(0);
 
     case 'make:migration':
@@ -387,46 +378,22 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please provide a migration name. (e.g. php veldora make:migration create_posts_table)\n");
             exit(1);
         }
-        $ts = date('Y_m_d_His');
-        $file = $app->basePath("database/migrations/{$ts}_{$name}.php");
-        $dir = dirname($file);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
-        file_put_contents($file, "<?php\n\ndeclare(strict_types=1);\n\nuse Veldora\Framework\Database\Schema\Blueprint;\nuse Veldora\Framework\Database\Schema\Migration;\nuse Veldora\Framework\Database\Schema\Schema;\n\nreturn new class extends Migration {\n    public function up(): void\n    {\n        Schema::create('{$name}', function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('{$name}');\n    }\n};\n");
-        echo "\033[32m✔ Created Migration:\033[0m database/migrations/{$ts}_{$name}.php\n";
+        (new Veldora\Framework\Console\Commands\MakeMigrationCommand())->executeDirect($name);
         exit(0);
 
     case 'make:auth':
-        if (class_exists(Symfony\Component\Console\Application::class)) {
-            $cmd = new Veldora\Framework\Console\Commands\MakeAuthCommand();
-        } else {
-            echo "\033[32m✔ Scaffolding Authentication Layer...\033[0m\n";
-        }
-        break;
-
-    case 'migrate':
-        if (class_exists(Symfony\Component\Console\Application::class)) {
-            $cmd = new Veldora\Framework\Console\Commands\MigrateCommand();
-        }
-        break;
-
-    case 'migrate:rollback':
-        if (class_exists(Symfony\Component\Console\Application::class)) {
-            $cmd = new Veldora\Framework\Console\Commands\RollbackCommand();
-        }
-        break;
-
-    case 'migrate:fresh':
-        if (class_exists(Symfony\Component\Console\Application::class)) {
-            $cmd = new Veldora\Framework\Console\Commands\FreshCommand();
-        }
-        break;
+        (new Veldora\Framework\Console\Commands\MakeAuthCommand())->executeDirect();
+        exit(0);
 
     case 'ui:list':
-        (new Veldora\Framework\Console\Commands\ListComponentsCommand())->run(
-            new Symfony\Component\Console\Input\ArrayInput([]),
-            new Symfony\Component\Console\Output\ConsoleOutput()
-        );
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            (new Veldora\Framework\Console\Commands\ListComponentsCommand())->run(
+                new Symfony\Component\Console\Input\ArrayInput([]),
+                new Symfony\Component\Console\Output\ConsoleOutput()
+            );
+        } else {
+            (new Veldora\Framework\Console\Commands\ListComponentsCommand())->executeDirect();
+        }
         exit(0);
 
     case 'add':
@@ -435,10 +402,51 @@ switch ($command) {
             fwrite(STDERR, "\033[31mError:\033[0m Please specify components to add (e.g. php veldora add button card modal)\n");
             exit(1);
         }
-        (new Veldora\Framework\Console\Commands\AddComponentCommand())->run(
-            new Symfony\Component\Console\Input\ArrayInput(['components' => $components]),
-            new Symfony\Component\Console\Output\ConsoleOutput()
+        if (class_exists(Symfony\Component\Console\Application::class)) {
+            (new Veldora\Framework\Console\Commands\AddComponentCommand())->run(
+                new Symfony\Component\Console\Input\ArrayInput(['components' => $components]),
+                new Symfony\Component\Console\Output\ConsoleOutput()
+            );
+        } else {
+            (new Veldora\Framework\Console\Commands\AddComponentCommand())->executeDirect($components);
+        }
+        exit(0);
+
+    case 'queue:work':
+        $connection = 'default';
+        $queue = 'default';
+        $once = in_array('--once', $args, true);
+        $sleep = 3;
+        $maxJobs = 0;
+        $stopWhenEmpty = in_array('--stop-when-empty', $args, true);
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--connection=')) $connection = substr($arg, 13);
+            if (str_starts_with($arg, '--queue=')) $queue = substr($arg, 8);
+            if (str_starts_with($arg, '--sleep=')) $sleep = (int) substr($arg, 8);
+            if (str_starts_with($arg, '--max-jobs=')) $maxJobs = (int) substr($arg, 11);
+        }
+        (new Veldora\Framework\Console\Commands\QueueWorkCommand())->executeDirect(
+            $connection, $queue, $once, $sleep, $maxJobs, $stopWhenEmpty
         );
+        exit(0);
+
+    case 'queue:failed':
+        (new Veldora\Framework\Console\Commands\QueueFailedCommand())->executeDirect();
+        exit(0);
+
+    case 'queue:retry':
+        $id = $args[1] ?? 'all';
+        (new Veldora\Framework\Console\Commands\QueueRetryCommand())->executeDirect($id);
+        exit(0);
+
+    case 'queue:clear':
+        $connection = 'default';
+        $queue = 'default';
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--connection=')) $connection = substr($arg, 13);
+            if (str_starts_with($arg, '--queue=')) $queue = substr($arg, 8);
+        }
+        (new Veldora\Framework\Console\Commands\QueueClearCommand())->executeDirect($connection, $queue);
         exit(0);
 
     case 'help':
@@ -447,7 +455,7 @@ switch ($command) {
     default:
         $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
         echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv{$cliVersion}\033[0m\n";
-        echo "\033[90m  The modern PHP framework you actually own. 40+ Built-in Commands.\033[0m\n\n";
+        echo "\033[90m  The modern PHP framework you actually own. 48 Built-in Commands.\033[0m\n\n";
         echo "  \033[1mUsage:\033[0m\n";
         echo "    $ \033[36mphp veldora\033[0m \033[97m<command> [options]\033[0m\n\n";
 
@@ -457,6 +465,8 @@ switch ($command) {
         echo "    \033[35mdoctor\033[0m             \033[90mRun system health diagnostics and extension checks\033[0m\n";
         echo "    \033[35mkey:generate\033[0m       \033[90mGenerate secure 32-character APP_KEY in .env\033[0m\n";
         echo "    \033[35mstorage:link\033[0m       \033[90mCreate symlink from public/storage to storage/app/public\033[0m\n";
+        echo "    \033[35mdown\033[0m               \033[90mPut application into maintenance mode (--secret=...)\033[0m\n";
+        echo "    \033[35mup\033[0m                 \033[90mBring application out of maintenance mode\033[0m\n";
         echo "    \033[35menv\033[0m                \033[90mDisplay current application environment\033[0m\n";
         echo "    \033[35menv:encrypt\033[0m        \033[90mEncrypt .env file using APP_KEY for safe deployment\033[0m\n";
         echo "    \033[35menv:decrypt\033[0m        \033[90mDecrypt .env.encrypted file using APP_KEY\033[0m\n\n";
@@ -467,6 +477,8 @@ switch ($command) {
         echo "    \033[35mmake:migration\033[0m     \033[90mCreate a database migration file\033[0m\n";
         echo "    \033[35mmake:middleware\033[0m    \033[90mCreate a new HTTP Middleware class\033[0m\n";
         echo "    \033[35mmake:request\033[0m       \033[90mCreate a Form Request Validator class\033[0m\n";
+        echo "    \033[35mmake:resource\033[0m      \033[90mCreate an API JSON Resource class\033[0m\n";
+        echo "    \033[35mmake:factory\033[0m       \033[90mCreate a Model Factory class\033[0m\n";
         echo "    \033[35mmake:seeder\033[0m        \033[90mCreate a Database Seeder class\033[0m\n";
         echo "    \033[35mmake:command\033[0m       \033[90mCreate a custom Veldora Console Command\033[0m\n";
         echo "    \033[35mmake:job\033[0m           \033[90mCreate a background Queue Job class\033[0m\n";
@@ -500,8 +512,14 @@ switch ($command) {
         echo "    \033[36mview:clear\033[0m         \033[90mClear all compiled view files\033[0m\n";
         echo "    \033[36mcache:clear\033[0m        \033[90mFlush the application and session cache\033[0m\n\n";
 
+        echo "  \033[1;36mQueue Processing (queue:*)\033[0m\n";
+        echo "    \033[36mqueue:work\033[0m         \033[90mStart processing jobs on the queue daemon\033[0m\n";
+        echo "    \033[36mqueue:failed\033[0m       \033[90mList all failed queue jobs\033[0m\n";
+        echo "    \033[36mqueue:retry\033[0m        \033[90mRetry a failed queue job (<id> or all)\033[0m\n";
+        echo "    \033[36mqueue:clear\033[0m        \033[90mDelete all jobs from the specified queue\033[0m\n\n";
+
         echo "  \033[1;36mUI Components\033[0m\n";
-        echo "    \033[32mui:list\033[0m            \033[90mList all 21 available Veldora UI components\033[0m\n";
+        echo "    \033[32mui:list\033[0m            \033[90mList all 41 available Veldora UI components\033[0m\n";
         echo "    \033[32madd [components]\033[0m   \033[90mAdd UI components into resources/views/components/\033[0m\n\n";
 
         echo "  \033[90mDocumentation: https://veldora.modrao.com • Author: Shahriyar Fahim\033[0m\n\n";
@@ -516,6 +534,8 @@ if (class_exists(Symfony\Component\Console\Application::class)) {
     $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
     $console->add(new Veldora\Framework\Console\Commands\KeyGenerateCommand());
     $console->add(new Veldora\Framework\Console\Commands\StorageLinkCommand());
+    $console->add(new Veldora\Framework\Console\Commands\DownCommand());
+    $console->add(new Veldora\Framework\Console\Commands\UpCommand());
     $console->add(new Veldora\Framework\Console\Commands\RouteListCommand());
     $console->add(new Veldora\Framework\Console\Commands\RouteCacheCommand());
     $console->add(new Veldora\Framework\Console\Commands\RouteClearCommand());
