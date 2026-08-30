@@ -445,7 +445,8 @@ switch ($command) {
     case '--help':
     case '-h':
     default:
-        echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv0.5.0\033[0m\n";
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
+        echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv{$cliVersion}\033[0m\n";
         echo "\033[90m  The modern PHP framework you actually own. 40+ Built-in Commands.\033[0m\n\n";
         echo "  \033[1mUsage:\033[0m\n";
         echo "    $ \033[36mphp veldora\033[0m \033[97m<command> [options]\033[0m\n\n";
@@ -509,7 +510,8 @@ switch ($command) {
 
 // If Symfony Console is available, run through Symfony application
 if (class_exists(Symfony\Component\Console\Application::class)) {
-    $console = new Symfony\Component\Console\Application('Veldora', '0.5.0');
+    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
+    $console = new Symfony\Component\Console\Application('Veldora', $cliVersion);
     $console->add(new Veldora\Framework\Console\Commands\AboutCommand());
     $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
     $console->add(new Veldora\Framework\Console\Commands\KeyGenerateCommand());
