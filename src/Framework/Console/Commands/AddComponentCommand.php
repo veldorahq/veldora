@@ -76,7 +76,12 @@ class AddComponentCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $components = $input->getArgument('components');
+        ob_start();
         $this->executeDirect((array) $components);
+        $content = (string) ob_get_clean();
+        if ($content !== '') {
+            $output->write($content);
+        }
         return Command::SUCCESS;
     }
 

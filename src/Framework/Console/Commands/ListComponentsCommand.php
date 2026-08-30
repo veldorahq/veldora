@@ -63,7 +63,12 @@ class ListComponentsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        ob_start();
         $this->executeDirect();
+        $content = (string) ob_get_clean();
+        if ($content !== '') {
+            $output->write($content);
+        }
         return Command::SUCCESS;
     }
 

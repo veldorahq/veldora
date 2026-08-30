@@ -252,13 +252,21 @@ abstract class Model implements ArrayAccess, JsonSerializable
     /**
      * Create a new model instance loaded from database row attributes.
      *
-     * @param array<string, mixed> $attributes
+     * @param array<string, mixed>|static $attributes
      */
-    public function newFromBuilder(array $attributes): static
+    public function newFromBuilder(array|self $attributes): static
     {
+        if ($attributes instanceof static) {
+            return $attributes;
+        }
+
+        if ($attributes instanceof self) {
+            $attributes = $attributes->getAttributes();
+        }
+
         $model = new static();
-        $model->attributes = $attributes;
-        $model->original = $attributes;
+        $model->attributes = (array) $attributes;
+        $model->original = (array) $attributes;
         $model->exists = true;
         return $model;
     }
