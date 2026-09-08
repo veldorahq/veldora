@@ -5,15 +5,23 @@ All notable changes to the **Veldora PHP Framework** will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.7] - 2026-08-30
+## [0.6.0] - 2026-09-08
 
 ### Added
-- Updated to `veldora/framework` v0.5.7 with 48 fully functional CLI commands (including `down`, `up`, and all `queue:*` commands).
-- Full `executeDirect()` zero-dependency CLI execution on all generator and maintenance commands.
+- **Extended Blueprint Schema**: Added `date()`, `dateTime()`, `decimal()`, `float()`, `bigInteger()`, `unsignedInteger()`, `foreignId()`, `json()`, and `enum()` helpers with SQLite & MySQL compilation.
+- **ORM Model Methods**: Added `Model::create()`, `Model::firstOrCreate()`, and `Model::updateOrCreate()`.
+- **Advanced & Polymorphic Relations**: Added `HasOneThrough`, `MorphTo`, `MorphOne`, `MorphMany`, `MorphToMany`, and `MorphedByMany` relations with model helper methods.
+- **Relation QueryBuilder Proxying**: `Relation` base class implements `__call()` forwarding so `$model->relation()->where(...)->count()` works natively.
+- **Dedicated HTTP Layer**: Added `JsonResponse`, `RedirectResponse` (with fluent `with()`, `withErrors()`, `withInput()`), `Session`, `UploadedFile`, and `ResponseFactory`.
+- **Built-in `make:policy` CLI Generator**: Scaffold authorization policy classes in `app/Policies/`.
+- **`Model::observe()` Observer Auto-Wiring**: Class-based lifecycle event listener auto-wiring supporting `creating`, `created`, `updating`, `updated`, `saving`, `saved`, `deleting`, `deleted`, `restoring`, `restored`, and `forceDeleted`.
+- **Built-in `make:observer` CLI Generator**: Scaffold Model Observers in `app/Observers/` with `--model=` flag support.
+- **Built-in `make:rule` CLI Generator**: Scaffold custom Validation Rule classes in `app/Rules/` implementing `Veldora\Framework\Validation\Rule`.
+- **51 Built-in CLI Commands**: Complete standalone and Symfony console runner expanded to 51 built-in commands.
+- **Expanded Unit Test Suite**: Reached **110 passing unit tests and 458 assertions** with zero failures.
 
 ### Fixed
-- `make:migration` and `make:model -m` generate anonymous class migrations for reliable execution.
-- Project skeleton cleanly isolated from internal framework directories.
+- **`SessionGuard` Resilient Remember Token**: Guarded `remember_token` updates with try-catch so schemas omitting `remember_token` column do not throw `PDOException` on login/logout.
 
 ---
 

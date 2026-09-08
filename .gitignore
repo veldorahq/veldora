@@ -10,6 +10,8 @@
 # Playground & Scratch
 /playground/
 /scratch/
+/test-app/
+/temp/
 *.ps1
 *.bat
 
@@ -47,6 +49,7 @@ Thumbs.db
 /create-veldora-app/
 /docs-site/
 /veldora-vscode/
+/veldora-starter/
 
 # Internal private planning notes (ignored in public starter app)
 /ARCHITECTURE.md
@@ -55,3 +58,6 @@ Thumbs.db
 /assets/
 /default-favicon/
 /phpstan.neon
+
+# Lock file (managed per-project)
+composer.lock

@@ -105,7 +105,7 @@ switch ($command) {
                 $host = substr($arg, 7);
             }
         }
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
         echo "\n\033[35m\033[1m  ▲ Veldora Development Server\033[0m \033[90mv{$cliVersion}\033[0m\n\n";
         echo "  \033[90mServer running on:\033[0m   \033[36m\033[1mhttp://{$host}:{$port}\033[0m\n";
         echo "  \033[90mEnvironment:\033[0m         \033[32mlocal\033[0m\n";
@@ -117,7 +117,8 @@ switch ($command) {
             1 => STDOUT,
             2 => ['pipe', 'w'],
         ];
-        $cmd = PHP_BINARY . " -S {$host}:{$port} -t public/";
+        $routerScript = file_exists('server.php') ? 'server.php' : '-t public/';
+        $cmd = PHP_BINARY . " -S {$host}:{$port} {$routerScript}";
         $process = proc_open($cmd, $descriptors, $pipes);
         if (is_resource($process)) {
             while (!feof($pipes[2])) {
@@ -302,6 +303,49 @@ switch ($command) {
         (new Veldora\Framework\Console\Commands\MakeComponentCommand())->executeDirect($name);
         exit(0);
 
+    case 'make:policy':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a policy name. (e.g. php veldora make:policy PostPolicy)\n");
+            exit(1);
+        }
+        $model = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--model=')) {
+                $model = substr($arg, 8);
+            } elseif (str_starts_with($arg, '-m=')) {
+                $model = substr($arg, 3);
+            }
+        }
+        (new Veldora\Framework\Console\Commands\MakePolicyCommand())->executeDirect($name, $model);
+        exit(0);
+
+    case 'make:observer':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide an observer name. (e.g. php veldora make:observer PostObserver)\n");
+            exit(1);
+        }
+        $model = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--model=')) {
+                $model = substr($arg, 8);
+            } elseif (str_starts_with($arg, '-m=')) {
+                $model = substr($arg, 3);
+            }
+        }
+        (new Veldora\Framework\Console\Commands\MakeObserverCommand())->executeDirect($name, $model);
+        exit(0);
+
+    case 'make:rule':
+        $name = $args[1] ?? null;
+        if (!$name) {
+            fwrite(STDERR, "\033[31mError:\033[0m Please provide a rule name. (e.g. php veldora make:rule Uppercase)\n");
+            exit(1);
+        }
+        (new Veldora\Framework\Console\Commands\MakeRuleCommand())->executeDirect($name);
+        exit(0);
+
     case 'make:middleware':
         $name = $args[1] ?? null;
         if (!$name) {
@@ -440,7 +484,7 @@ switch ($command) {
         exit(0);
 
     case 'queue:clear':
-        $connection = 'default';
+        $connection = config('queue.default', 'sync');
         $queue = 'default';
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--connection=')) $connection = substr($arg, 13);
@@ -453,9 +497,9 @@ switch ($command) {
     case '--help':
     case '-h':
     default:
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
         echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv{$cliVersion}\033[0m\n";
-        echo "\033[90m  The modern PHP framework you actually own. 48 Built-in Commands.\033[0m\n\n";
+        echo "\033[90m  The modern PHP framework you actually own. 51 Built-in Commands.\033[0m\n\n";
         echo "  \033[1mUsage:\033[0m\n";
         echo "    $ \033[36mphp veldora\033[0m \033[97m<command> [options]\033[0m\n\n";
 
@@ -476,6 +520,9 @@ switch ($command) {
         echo "    \033[35mmake:model\033[0m         \033[90mCreate an ActiveRecord Model (-m for migration)\033[0m\n";
         echo "    \033[35mmake:migration\033[0m     \033[90mCreate a database migration file\033[0m\n";
         echo "    \033[35mmake:middleware\033[0m    \033[90mCreate a new HTTP Middleware class\033[0m\n";
+        echo "    \033[35mmake:policy\033[0m        \033[90mCreate an authorization Policy class (--model=...)\033[0m\n";
+        echo "    \033[35mmake:observer\033[0m      \033[90mCreate a model Observer class (--model=...)\033[0m\n";
+        echo "    \033[35mmake:rule\033[0m          \033[90mCreate a custom Validation Rule class\033[0m\n";
         echo "    \033[35mmake:request\033[0m       \033[90mCreate a Form Request Validator class\033[0m\n";
         echo "    \033[35mmake:resource\033[0m      \033[90mCreate an API JSON Resource class\033[0m\n";
         echo "    \033[35mmake:factory\033[0m       \033[90mCreate a Model Factory class\033[0m\n";
@@ -528,7 +575,7 @@ switch ($command) {
 
 // If Symfony Console is available, run through Symfony application
 if (class_exists(Symfony\Component\Console\Application::class)) {
-    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.5.6';
+    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
     $console = new Symfony\Component\Console\Application('Veldora', $cliVersion);
     $console->add(new Veldora\Framework\Console\Commands\AboutCommand());
     $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
@@ -560,6 +607,9 @@ if (class_exists(Symfony\Component\Console\Application::class)) {
     $console->add(new Veldora\Framework\Console\Commands\MakeListenerCommand());
     $console->add(new Veldora\Framework\Console\Commands\MakeMailCommand());
     $console->add(new Veldora\Framework\Console\Commands\MakeComponentCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakePolicyCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeObserverCommand());
+    $console->add(new Veldora\Framework\Console\Commands\MakeRuleCommand());
     $console->add(new Veldora\Framework\Console\Commands\MakeMiddlewareCommand());
     $console->add(new Veldora\Framework\Console\Commands\MakeRequestCommand());
     $console->add(new Veldora\Framework\Console\Commands\MakeResourceCommand());
