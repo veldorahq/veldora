@@ -1,235 +1,299 @@
 @extends('layouts.app')
 
 @section('content')
+<?php
+use Veldora\Framework\Foundation\Application;
+$version    = Application::VERSION;
+$phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+$appName    = env('APP_NAME', 'Veldora');
+$appEnv     = env('APP_ENV', 'local');
+$dbDriver   = env('DB_CONNECTION', 'sqlite');
+?>
 <style>
-    /* ── Hero ────────────────────────────────────────────── */
-    .welcome-hero {
-        text-align: center;
-        max-width: 640px;
-        margin: 1.5rem auto 3.5rem;
-    }
+/* ── Welcome Container ─────────────────────────────────────────────── */
+.welcome-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 0 4rem;
+}
 
-    .hero-icon {
-        width: 48px;
-        height: 48px;
-        fill: var(--accent);
-        margin-bottom: 1.5rem;
-        filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.4));
-    }
+/* ── Hero Section ──────────────────────────────────────────────────── */
+.hero {
+    text-align: center;
+    margin-bottom: 3.5rem;
+}
 
-    .welcome-title {
-        font-size: 2.25rem;
-        font-weight: 700;
-        letter-spacing: -0.025em;
-        margin-bottom: 0.75rem;
-        color: #ffffff;
-    }
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #a78bfa;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    margin-bottom: 1.5rem;
+    backdrop-filter: blur(8px);
+}
 
-    .welcome-subtitle {
-        font-size: 1.05rem;
-        color: var(--text-muted);
-        line-height: 1.6;
-    }
+.hero-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
 
-    /* ── Cards Grid ──────────────────────────────────────── */
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.25rem;
-        max-width: 960px;
-        margin: 0 auto;
-    }
+.hero-title {
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    color: #ffffff;
+    margin-bottom: 1.25rem;
+}
 
-    .feature-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 1.5rem;
-        transition: border-color 0.2s, background 0.2s;
-        display: flex;
+.hero-title .gradient-text {
+    background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 50%, #6d28d9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    max-width: 580px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+}
+
+.hero-subtitle code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ── Quick Terminal Box ────────────────────────────────────────────── */
+.cli-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(17, 17, 20, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.2s;
+}
+
+.cli-box:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.cli-prompt {
+    color: #64748b;
+    user-select: none;
+}
+
+.cli-command {
+    color: #38bdf8;
+    font-weight: 500;
+}
+
+.cli-copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.cli-copy-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Resource Grid ─────────────────────────────────────────────────── */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 3.5rem;
+}
+
+.resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.resource-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.resource-card:hover {
+    border-color: rgba(139, 92, 246, 0.35);
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.resource-card:hover::before {
+    opacity: 1;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0.85rem;
+}
+
+.card-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a78bfa;
+    flex-shrink: 0;
+}
+
+.card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.card-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.card-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.825rem;
+    font-weight: 500;
+    color: #a78bfa;
+    transition: gap 0.15s ease;
+}
+
+.resource-card:hover .card-action {
+    gap: 9px;
+    color: #c4b5fd;
+}
+
+/* ── Environment Status Bar ────────────────────────────────────────── */
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(17, 17, 20, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.status-items {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.status-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-item strong {
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.status-divider {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--border-hover);
+}
+
+@media (max-width: 640px) {
+    .resource-grid {
+        grid-template-columns: 1fr;
+    }
+    .status-bar {
         flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .feature-card:hover {
-        border-color: var(--border-hover);
-        background: var(--surface-hover);
-    }
-
-    .feature-top {
-        display: flex;
         align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 1.25rem;
     }
-
-    .feature-icon-box {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background: rgba(139, 92, 246, 0.1);
-        border: 1px solid rgba(139, 92, 246, 0.2);
-        color: var(--accent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .feature-title {
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 0.25rem;
-    }
-
-    .feature-desc {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-        line-height: 1.5;
-    }
-
-    .feature-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--accent);
-        text-decoration: none;
-        transition: gap 0.15s ease;
-    }
-
-    .feature-link:hover {
-        gap: 9px;
-        color: #a78bfa;
-    }
-
-    /* ── Snippet Box ─────────────────────────────────────── */
-    .snippet-box {
-        background: #060608;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
-        overflow: hidden;
-    }
-
-    .snippet-text {
-        color: #38bdf8;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .copy-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.15s, background 0.15s;
-        flex-shrink: 0;
-    }
-
-    .copy-btn:hover {
-        color: #ffffff;
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    /* ── Responsive ──────────────────────────────────────── */
-    @media (max-width: 768px) {
-        .features-grid {
-            grid-template-columns: 1fr;
-        }
-        .welcome-title {
-            font-size: 1.85rem;
-        }
-    }
+}
 </style>
 
-<!-- Hero -->
-<div class="welcome-hero">
-    <svg class="hero-icon" viewBox="0 0 24 24">
-        <polygon points="12,2 22,20 2,20"></polygon>
-    </svg>
-    <h1 class="welcome-title">Welcome to your application</h1>
-    <p class="welcome-subtitle">
-        Veldora gives you a clean, lightweight foundation to build modern web applications in PHP.
-    </p>
-</div>
+<div class="welcome-container">
 
-<!-- Features & Commands Grid -->
-<div class="features-grid">
+    <!-- ── Hero Section ────────────────────────────────────────────── -->
+    <div class="hero">
+        <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            Veldora Framework &middot; v<?= htmlspecialchars($version) ?>
+        </div>
 
-    <!-- Card 1: Documentation -->
-    <div class="feature-card">
-        <div class="feature-top">
-            <div class="feature-icon-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-            </div>
-            <div>
-                <h3 class="feature-title">Documentation</h3>
-                <p class="feature-desc">Explore comprehensive guides on routing, controllers, middleware, and ActiveRecord models.</p>
-            </div>
-        </div>
-        <div>
-            <a href="https://veldora.modrao.com/docs" target="_blank" rel="noopener" class="feature-link">
-                Read documentation <span>→</span>
-            </a>
-        </div>
-    </div>
+        <h1 class="hero-title">
+            Welcome to <span class="gradient-text"><?= htmlspecialchars($appName) ?></span>
+        </h1>
 
-    <!-- Card 2: UI Components -->
-    <div class="feature-card">
-        <div class="feature-top">
-            <div class="feature-icon-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>
-            </div>
-            <div>
-                <h3 class="feature-title">UI Components</h3>
-                <p class="feature-desc">Browse 21 production-ready, accessible Blade components you can copy directly into your project.</p>
-            </div>
-        </div>
-        <div>
-            <a href="https://veldora.modrao.com/components" target="_blank" rel="noopener" class="feature-link">
-                Browse components <span>→</span>
-            </a>
-        </div>
-    </div>
+        <p class="hero-subtitle">
+            Get started by editing <code>app/Controllers/HomeController.php</code> or explore the resources below to build your application.
+        </p>
 
-    <!-- Card 3: Dev Server -->
-    <div class="feature-card">
-        <div class="feature-top">
-            <div class="feature-icon-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-            </div>
-            <div>
-                <h3 class="feature-title">Development Server</h3>
-                <p class="feature-desc">Start your local server with instant reloading and colorized request logs.</p>
-            </div>
-        </div>
-        <div class="snippet-box">
-            <span class="snippet-text">php veldora serve</span>
-            <button class="copy-btn" onclick="copyCode('php veldora serve', this)" title="Copy to clipboard">
+        <div class="cli-box">
+            <span class="cli-prompt">$</span>
+            <span class="cli-command">php veldora serve</span>
+            <button class="cli-copy-btn" onclick="copySnippet('php veldora serve', this)" title="Copy command" aria-label="Copy command">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -238,31 +302,140 @@
         </div>
     </div>
 
-    <!-- Card 4: Code Generators -->
-    <div class="feature-card">
-        <div class="feature-top">
-            <div class="feature-icon-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="16 18 22 12 16 6"></polyline>
-                    <polyline points="8 6 2 12 8 18"></polyline>
-                </svg>
-            </div>
+    <!-- ── Resource Cards Grid ─────────────────────────────────────── -->
+    <div class="resource-grid">
+
+        <!-- Documentation Card -->
+        <a href="https://veldora.modrao.com/docs" target="_blank" rel="noopener" class="resource-card">
             <div>
-                <h3 class="feature-title">CLI Generators</h3>
-                <p class="feature-desc">Scaffold controllers, models, migrations, and authentication in seconds.</p>
+                <div class="card-header">
+                    <div class="card-icon-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                    </div>
+                    <div class="card-title">Documentation</div>
+                </div>
+                <div class="card-desc">
+                    Comprehensive guides on routing, ActiveRecord ORM, controllers, middleware, and authentication.
+                </div>
             </div>
-        </div>
-        <div class="snippet-box">
-            <span class="snippet-text">php veldora make:controller PostController</span>
-            <button class="copy-btn" onclick="copyCode('php veldora make:controller PostController', this)" title="Copy to clipboard">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            <div class="card-action">
+                <span>Read documentation</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
-            </button>
+            </div>
+        </a>
+
+        <!-- UI Components Card -->
+        <a href="https://veldora.modrao.com/components" target="_blank" rel="noopener" class="resource-card">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </div>
+                    <div class="card-title">UI Components</div>
+                </div>
+                <div class="card-desc">
+                    Explore pre-designed, accessible UI components ready to be dropped into your templates.
+                </div>
+            </div>
+            <div class="card-action">
+                <span>Browse components</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        </a>
+
+        <!-- CLI Generators Card -->
+        <a href="https://veldora.modrao.com/docs/5-the-basics-controllers" target="_blank" rel="noopener" class="resource-card">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4 17 10 11 4 5"></polyline>
+                            <line x1="12" y1="19" x2="20" y2="19"></line>
+                        </svg>
+                    </div>
+                    <div class="card-title">CLI Generators</div>
+                </div>
+                <div class="card-desc">
+                    Scaffold controllers, models, migrations, seeders, and requests effortlessly using the CLI tool.
+                </div>
+            </div>
+            <div class="card-action">
+                <span>Explore commands</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Community & GitHub Card -->
+        <a href="https://github.com/veldorahq" target="_blank" rel="noopener" class="resource-card">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </div>
+                    <div class="card-title">GitHub Repository</div>
+                </div>
+                <div class="card-desc">
+                    Contribute to the framework, report issues, and follow ongoing development on GitHub.
+                </div>
+            </div>
+            <div class="card-action">
+                <span>View repository</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        </a>
+
+    </div>
+
+    <!-- ── Environment Status Bar ──────────────────────────────────── -->
+    <div class="status-bar">
+        <div class="status-items">
+            <span class="status-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                </svg>
+                <span>Environment: <strong><?= htmlspecialchars($appEnv) ?></strong></span>
+            </span>
+            <span class="status-divider"></span>
+            <span class="status-item">
+                <span>PHP: <strong>v<?= htmlspecialchars($phpVersion) ?></strong></span>
+            </span>
+            <span class="status-divider"></span>
+            <span class="status-item">
+                <span>Database: <strong><?= htmlspecialchars($dbDriver) ?></strong></span>
+            </span>
+        </div>
+        <div>
+            <span>Veldora <strong>v<?= htmlspecialchars($version) ?></strong></span>
         </div>
     </div>
 
 </div>
 
+<script>
+function copySnippet(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+    });
+}
+</script>
 @endsection
