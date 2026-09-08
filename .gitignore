@@ -50,6 +50,7 @@ Thumbs.db
 /docs-site/
 /veldora-vscode/
 /veldora-starter/
+/docs-vercel/
 
 # Internal private planning notes (ignored in public starter app)
 /ARCHITECTURE.md
