@@ -5,6 +5,19 @@ All notable changes to the **Veldora PHP Framework** will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-09-12
+
+### Added
+- **Veldora Connect** — Official integrations ecosystem launched at [`veldorahq/connect`](https://github.com/veldorahq/connect).
+- **`veldora/connect-stripe`** (v0.7.0) — First-party Stripe payment gateway with Checkout Sessions, PaymentIntents, Customer management, Webhook verification, and full Veldora event system integration.
+- Connect monorepo structure with future roadmap: SSLCommerz, Resend, S3, Sentry.
+
+### Changed
+- All ecosystem packages bumped to `v0.7.0`: `veldora/framework`, `veldora/ui`, `create-veldora-app`, `veldora-vscode`, `veldora/veldora` starter.
+- `veldora/veldora` starter `.gitattributes` export-ignore rules fixed — `composer create-project` now downloads only the application skeleton.
+
+---
+
 ## [0.6.0] - 2026-09-08
 
 ### Added

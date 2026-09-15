@@ -628,6 +628,7 @@ if (class_exists(Symfony\Component\Console\Application::class)) {
     $console->add(new Veldora\Framework\Console\Commands\QueueFailedCommand());
     $console->add(new Veldora\Framework\Console\Commands\QueueRetryCommand());
     $console->add(new Veldora\Framework\Console\Commands\QueueClearCommand());
+    $console->add(new Veldora\Framework\Console\Commands\ConnectCommand($appBase));
     $console->run();
     exit(0);
 }
