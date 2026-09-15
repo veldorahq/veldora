@@ -456,6 +456,11 @@ switch ($command) {
         }
         exit(0);
 
+    case 'connect':
+        $service = $args[1] ?? null;
+        (new Veldora\Framework\Console\Commands\ConnectCommand($appBase))->executeDirect($service);
+        exit(0);
+
     case 'queue:work':
         $connection = 'default';
         $queue = 'default';
@@ -497,9 +502,9 @@ switch ($command) {
     case '--help':
     case '-h':
     default:
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.0';
         echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv{$cliVersion}\033[0m\n";
-        echo "\033[90m  The modern PHP framework you actually own. 51 Built-in Commands.\033[0m\n\n";
+        echo "\033[90m  The modern PHP framework you actually own. 53 Built-in Commands.\033[0m\n\n";
         echo "  \033[1mUsage:\033[0m\n";
         echo "    $ \033[36mphp veldora\033[0m \033[97m<command> [options]\033[0m\n\n";
 
@@ -565,6 +570,9 @@ switch ($command) {
         echo "    \033[36mqueue:retry\033[0m        \033[90mRetry a failed queue job (<id> or all)\033[0m\n";
         echo "    \033[36mqueue:clear\033[0m        \033[90mDelete all jobs from the specified queue\033[0m\n\n";
 
+        echo "  \033[1;36mIntegrations & Ecosystem\033[0m\n";
+        echo "    \033[35mconnect\033[0m            \033[90mInstall & configure official Veldora Connect integrations\033[0m\n\n";
+
         echo "  \033[1;36mUI Components\033[0m\n";
         echo "    \033[32mui:list\033[0m            \033[90mList all 41 available Veldora UI components\033[0m\n";
         echo "    \033[32madd [components]\033[0m   \033[90mAdd UI components into resources/views/components/\033[0m\n\n";
@@ -575,7 +583,7 @@ switch ($command) {
 
 // If Symfony Console is available, run through Symfony application
 if (class_exists(Symfony\Component\Console\Application::class)) {
-    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
+    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.0';
     $console = new Symfony\Component\Console\Application('Veldora', $cliVersion);
     $console->add(new Veldora\Framework\Console\Commands\AboutCommand());
     $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
