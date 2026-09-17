@@ -6,7 +6,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2 || ^8.3",
-        "veldora/framework": "^0.7.0",
+        "veldora/framework": "^0.7.1",
         "veldora/ui": "^0.7.0"
     },
     "require-dev": {

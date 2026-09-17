@@ -5,6 +5,14 @@ All notable changes to the **Veldora PHP Framework** will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-09-17
+
+### Fixed
+- **CLI Development Server (`serve`)**: Fixed issue #8 where static assets in `public/` (e.g. `/css/veldora-ui.css`, `/favicon.svg`) returned 404 when started via `php veldora serve`. Added `-t public` document root parameter alongside `server.php` router script.
+- **Project Base Directory Validation**: Development server now validates `public/` directory existence and resolves paths using project base `$appBase` rather than relative working directory paths.
+
+---
+
 ## [0.7.0] - 2026-09-12
 
 ### Added

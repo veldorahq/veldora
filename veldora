@@ -105,7 +105,7 @@ switch ($command) {
                 $host = substr($arg, 7);
             }
         }
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.6.0';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.1';
         echo "\n\033[35m\033[1m  ▲ Veldora Development Server\033[0m \033[90mv{$cliVersion}\033[0m\n\n";
         echo "  \033[90mServer running on:\033[0m   \033[36m\033[1mhttp://{$host}:{$port}\033[0m\n";
         echo "  \033[90mEnvironment:\033[0m         \033[32mlocal\033[0m\n";
@@ -117,8 +117,24 @@ switch ($command) {
             1 => STDOUT,
             2 => ['pipe', 'w'],
         ];
-        $routerScript = file_exists('server.php') ? 'server.php' : '-t public/';
-        $cmd = PHP_BINARY . " -S {$host}:{$port} {$routerScript}";
+        // Use absolute paths — relative file_exists('server.php') breaks when invoked from a subdirectory
+        $serverPhpPath = $appBase . '/server.php';
+        $publicPath    = $appBase . '/public';
+
+        if (!is_dir($publicPath)) {
+            fwrite(STDERR, "\033[31mError:\033[0m Could not find a \033[33mpublic/\033[0m directory in \033[90m{$appBase}\033[0m.\n");
+            fwrite(STDERR, "       Run this command from your Veldora project root.\n\n");
+            exit(1);
+        }
+
+        if (file_exists($serverPhpPath)) {
+            // Pass both -t public/ (document root) AND server.php (router)
+            // Without -t, PHP uses cwd as document root, causing asset 404s
+            $cmd = PHP_BINARY . " -S {$host}:{$port} -t " . escapeshellarg($publicPath) . " " . escapeshellarg($serverPhpPath);
+        } else {
+            // Fallback: no router script, serve public/ directly
+            $cmd = PHP_BINARY . " -S {$host}:{$port} -t " . escapeshellarg($publicPath);
+        }
         $process = proc_open($cmd, $descriptors, $pipes);
         if (is_resource($process)) {
             while (!feof($pipes[2])) {
@@ -502,7 +518,7 @@ switch ($command) {
     case '--help':
     case '-h':
     default:
-        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.0';
+        $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.1';
         echo "\n\033[35m\033[1m  ▲ Veldora CLI\033[0m \033[90mv{$cliVersion}\033[0m\n";
         echo "\033[90m  The modern PHP framework you actually own. 53 Built-in Commands.\033[0m\n\n";
         echo "  \033[1mUsage:\033[0m\n";
@@ -583,7 +599,7 @@ switch ($command) {
 
 // If Symfony Console is available, run through Symfony application
 if (class_exists(Symfony\Component\Console\Application::class)) {
-    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.0';
+    $cliVersion = class_exists(\Veldora\Framework\Foundation\Application::class) ? \Veldora\Framework\Foundation\Application::VERSION : '0.7.1';
     $console = new Symfony\Component\Console\Application('Veldora', $cliVersion);
     $console->add(new Veldora\Framework\Console\Commands\AboutCommand());
     $console->add(new Veldora\Framework\Console\Commands\DoctorCommand());
